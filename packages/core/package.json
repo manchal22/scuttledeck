@@ -1,0 +1,25 @@
+{
+  "name": "@scuttledeck/core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.2",
+    "@scuttledeck/db": "workspace:*",
+    "drizzle-orm": "^0.44.2",
+    "pg-boss": "^10.1.5",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "vitest": "^3.0.5"
+  }
+}
