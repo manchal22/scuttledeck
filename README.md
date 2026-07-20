@@ -1,8 +1,14 @@
-# Scuttledeck 📡
+<p align="center">
+  <img src="docs/logo.svg" width="88" alt="Scuttledeck logo — a deck scuttle as a sonar screen" />
+</p>
+
+# Scuttledeck
 
 **Fleet monitoring for the Claude Code GitHub Action.** One self-hosted dashboard for your whole GitHub org: which repos run the agent, live run status, the PRs it reviewed or authored, and what every run actually cost.
 
-> ⚠️ **Status: pre-alpha.** The design is complete ([docs/design.html](docs/design.html)) and the Phase 0 spike is in progress. Nothing here is ready for production use yet — star/watch the repo to follow along.
+![Scuttledeck fleet dashboard](docs/screenshot-fleet.png)
+
+> ⚠️ **Status: pre-alpha.** The design is complete ([docs/design.html](docs/design.html)) and the Phase 0 spike has landed: webhook ingest, the OTLP endpoint, and the run↔cost correlator are proven end-to-end against a real Postgres. Star/watch the repo to follow along.
 
 > Scuttledeck is an independent community project. It is **not affiliated with, endorsed by, or supported by Anthropic**.
 
@@ -61,11 +67,28 @@ Cost attribution degrades gracefully: no telemetry step → daily per-key costs;
 
 ## Quick start
 
-*Coming with the MVP (Phase 1).* The goal it will be held to: `docker compose up`, install the GitHub App, and see your fleet in under 30 minutes.
+*The full turnkey story ships with the MVP (Phase 1).* The goal it will be held to: `docker compose up`, install the GitHub App, and see your fleet in under 30 minutes.
+
+### Hacking on it today
+
+```bash
+pnpm install
+docker compose up -d --wait postgres     # Postgres 16
+pnpm e2e                                 # unit + integration tests (the P0 exit proof)
+
+# dashboard with demo data
+DATABASE_URL=postgres://scuttledeck:scuttledeck@localhost:5432/scuttledeck \
+  pnpm --filter @scuttledeck/db seed
+DATABASE_URL=postgres://scuttledeck:scuttledeck@localhost:5432/scuttledeck \
+  pnpm --filter @scuttledeck/web dev     # → http://localhost:3000
+
+# the whole ingest plane in containers
+docker compose up -d                     # ingest on :8787
+```
 
 ## Roadmap
 
-- [ ] **P0 — Spike:** webhook ingest, workflow discovery, `scuttledeck/setup@v1`, OTLP endpoint, and the run↔cost correlator proven end-to-end *(in progress)*
+- [x] **P0 — Spike:** webhook ingest, workflow discovery, `scuttledeck/setup@v1`, OTLP endpoint, and the run↔cost correlator proven end-to-end *(landed — integration-tested against captured payloads; validation against a live org is the last P0 step)*
 - [ ] **P1 — MVP:** Fleet + Runs views, Anthropic Analytics poller, Docker Compose deploy, docs
 - [ ] **P2 — Per-run economics:** PR view, cost-per-review, billing reconciliation
 - [ ] **P3 — Operate:** alerting, Slack, SSO/OIDC, multi-org, retention policies

@@ -3,7 +3,7 @@
   "include": [
     "packages/*/src/**/*.ts",
     "packages/*/drizzle.config.ts",
-    "apps/*/src/**/*.ts",
-    "apps/*/test/**/*.ts"
+    "apps/ingest/src/**/*.ts",
+    "apps/ingest/test/**/*.ts"
   ]
 }
