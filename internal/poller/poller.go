@@ -25,6 +25,8 @@ type Config struct {
 	AnthropicAdminKey string
 	// Optional override for Anthropic API base (tests use a local server).
 	AnthropicBaseURL string
+	// Optional override for the GitHub API base (tests use a local server).
+	GithubAPIBaseURL string
 	// Slack incoming-webhook URL for alert notifications.
 	SlackWebhookURL string
 	// Days of raw webhook deliveries to keep. <=0 disables the sweep.
@@ -63,8 +65,14 @@ func Start(ctx context.Context, pool *pgxpool.Pool, cfg Config) {
 		go every(ctx, cfg.DiscoveryInterval, "discovery", func() error {
 			return RunDiscovery(ctx, pool, cfg.GithubToken, cfg.GithubOrg)
 		})
+		// Sweep failed webhook deliveries: turns "ingest was down" from data
+		// loss into a delayed arrival. Runs immediately on boot — exactly when
+		// an outage just ended.
+		go every(ctx, 30*time.Minute, "redelivery", func() error {
+			return RunRedelivery(ctx, pool, cfg.GithubAPIBaseURL, cfg.GithubToken)
+		})
 	} else {
-		log.Println("[poller] discovery disabled (no GITHUB_TOKEN)")
+		log.Println("[poller] discovery + redelivery disabled (no GITHUB_TOKEN)")
 	}
 
 	if cfg.AnthropicAdminKey != "" {

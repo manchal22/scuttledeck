@@ -123,7 +123,7 @@ for testing, see the README's local quick start.)
 | `ingest.token` | auto-generated | Bearer token CI runners send |
 | `web.password` | auto-generated | Dashboard login password (printed by helm NOTES) |
 | `web.sessionTtlHours` | `168` | Dashboard session lifetime |
-| `github.token` | — | Read-only GitHub token: enables the discovery scanner (hourly + on workflow-file pushes) |
+| `github.token` | — | Read-only GitHub token: enables the discovery scanner (hourly + on workflow-file pushes) **and the failed-webhook redelivery sweeper** (on boot + every 30 min — turns ingest downtime into delayed arrival instead of data loss) |
 | `anthropic.adminKey` | — | Admin API key: enables the Analytics + cost-report pollers |
 | `slack.webhookUrl` | — | Incoming webhook for alert notifications |
 | `retentionDays` | `30` | Raw webhook delivery retention |

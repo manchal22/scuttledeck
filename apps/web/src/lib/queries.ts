@@ -28,8 +28,8 @@ export async function fleetKpis(): Promise<FleetKpis> {
     .select({
       total: sql<number>`count(*)::int`,
       withAction: sql<number>`count(*) filter (where ${repo.hasAction} or exists (
-        select 1 from ${run} r join ${agentSession} s on s.run_id = r.id
-        where r.repo_id = ${repo.id}
+        select 1 from run r join agent_session s on s.run_id = r.id
+        where r.repo_id = repo.id
       ))::int`,
     })
     .from(repo);
