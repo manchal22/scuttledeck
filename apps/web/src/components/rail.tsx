@@ -2,21 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { Logo, LogoMark } from "@/components/logo";
+import {
+  IconAlerts,
+  IconChevrons,
+  IconCost,
+  IconFleet,
+  IconMoon,
+  IconPrs,
+  IconRuns,
+  IconSettings,
+  IconSignOut,
+  IconSun,
+} from "@/components/icons";
 
-const NAV = [
-  { href: "/", label: "Fleet", code: "01" },
-  { href: "/runs", label: "Runs", code: "02" },
-  { href: "/prs", label: "Pull Requests", code: "03" },
-  { href: "/cost", label: "Cost", code: "04" },
-  { href: "/alerts", label: "Alerts", code: "05" },
-  { href: "/settings", label: "Settings", code: "06" },
-] as const;
+const NAV: Array<{ href: string; label: string; Icon: ComponentType<{ size?: number }> }> = [
+  { href: "/", label: "Fleet", Icon: IconFleet },
+  { href: "/runs", label: "Runs", Icon: IconRuns },
+  { href: "/prs", label: "Pull Requests", Icon: IconPrs },
+  { href: "/cost", label: "Cost", Icon: IconCost },
+  { href: "/alerts", label: "Alerts", Icon: IconAlerts },
+  { href: "/settings", label: "Settings", Icon: IconSettings },
+];
 
 function setCookie(name: string, value: string) {
   document.cookie = `${name}=${value}; path=/; max-age=31536000; samesite=lax`;
 }
+
+const controlBtn =
+  "inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-rail-2 text-rail-faint " +
+  "hover:border-signal-deep hover:text-signal-bright focus-visible:outline-2 focus-visible:outline-signal-bright";
 
 export function Rail({
   initialCollapsed,
@@ -46,70 +62,92 @@ export function Rail({
 
   return (
     <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col bg-rail text-rail-ink transition-[width] duration-200 ${collapsed ? "w-16" : "w-60"}`}
+      className={`sticky top-0 flex h-screen shrink-0 flex-col bg-rail text-rail-ink transition-[width] duration-200 motion-reduce:transition-none ${collapsed ? "w-16" : "w-60"}`}
     >
-      <div className={`pt-6 pb-8 ${collapsed ? "px-3 text-center" : "px-5"}`}>
-        <Link href="/" className="block" title="Fleet">
-          {collapsed ? <LogoMark size={36} /> : <Logo />}
+      <div className={`pt-6 pb-7 ${collapsed ? "flex justify-center px-0" : "px-5"}`}>
+        <Link
+          href="/"
+          title="Fleet"
+          className="focus-visible:outline-2 focus-visible:outline-signal-bright"
+        >
+          {collapsed ? <LogoMark size={34} /> : <Logo />}
         </Link>
       </div>
 
-      <nav className="flex-1 px-3">
+      <nav className={`flex-1 ${collapsed ? "px-2.5" : "px-3"}`} aria-label="Primary">
         {!collapsed && (
           <p className="font-mono-data px-2 pb-2 text-[0.62rem] uppercase tracking-[0.2em] text-rail-faint">
             Bridge
           </p>
         )}
-        {NAV.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        {NAV.map(({ href, label, Icon }) => {
+          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              title={item.label}
-              className={`group mb-1 flex items-baseline gap-3 rounded-md px-3 py-2 text-[0.95rem] hover:bg-rail-2 ${active ? "bg-rail-2" : ""} ${collapsed ? "justify-center" : ""}`}
+              key={href}
+              href={href}
+              title={label}
+              aria-current={active ? "page" : undefined}
+              className={`relative mb-1 flex items-center rounded-md py-2 focus-visible:outline-2 focus-visible:outline-signal-bright ${
+                collapsed ? "justify-center" : "gap-3 px-3"
+              } ${active ? "bg-rail-2 text-signal-bright" : "text-rail-ink hover:bg-rail-2"}`}
             >
-              <span className={`font-mono-data text-[0.65rem] ${active ? "text-signal-bright" : "text-signal-bright/70"}`}>
-                {item.code}
+              {active && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-signal-bright"
+                />
+              )}
+              <span className={active ? "" : "text-rail-faint"}>
+                <Icon size={18} />
               </span>
-              {!collapsed && <span className={active ? "font-semibold" : "font-medium"}>{item.label}</span>}
+              {!collapsed && (
+                <span className={`text-[0.95rem] ${active ? "font-semibold" : "font-medium"}`}>{label}</span>
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className={`pb-5 ${collapsed ? "px-2" : "px-5"}`}>
-        {/* view controls — grouped and overflow-safe */}
-        <div className={`flex gap-1.5 ${collapsed ? "flex-col items-center" : ""}`}>
+      <div className={`pb-5 ${collapsed ? "px-2.5" : "px-5"}`}>
+        <div className={`flex gap-1.5 ${collapsed ? "flex-col" : ""}`}>
           <button
             onClick={toggleTheme}
             title={theme === "dark" ? "Switch to chart room (light)" : "Switch to night watch (dark)"}
-            className="font-mono-data inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-rail-2 px-2 py-1 text-[0.66rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
+            aria-label="Toggle color theme"
+            className={`${controlBtn} ${collapsed ? "w-full" : "flex-1 px-2"}`}
           >
-            {theme === "dark" ? "☀" : "☾"}
-            {!collapsed && <span>{theme === "dark" ? "day" : "night"}</span>}
+            {theme === "dark" ? <IconSun size={16} /> : <IconMoon size={16} />}
+            {!collapsed && (
+              <span className="font-mono-data text-[0.66rem]">{theme === "dark" ? "day" : "night"}</span>
+            )}
           </button>
           <button
             onClick={toggleCollapsed}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="font-mono-data inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-rail-2 px-2 py-1 text-[0.66rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!collapsed}
+            className={`${controlBtn} ${collapsed ? "w-full" : "flex-1 px-2"}`}
           >
-            {collapsed ? "⟩" : "⟨"}
-            {!collapsed && <span>collapse</span>}
+            <IconChevrons size={16} direction={collapsed ? "right" : "left"} />
+            {!collapsed && <span className="font-mono-data text-[0.66rem]">collapse</span>}
           </button>
         </div>
-        {/* sign-out lives apart from the view controls so it can't be fat-fingered */}
+
         {authEnabled && (
-          <div className={`mt-3 border-t border-rail-2 pt-3 ${collapsed ? "text-center" : ""}`}>
+          <div className="mt-3 border-t border-rail-2 pt-3">
             <a
               href="/api/logout"
               title="Sign out"
-              className="font-mono-data inline-flex items-center gap-1 whitespace-nowrap text-[0.66rem] text-rail-faint underline decoration-dotted underline-offset-4 hover:text-signal-bright"
+              aria-label="Sign out"
+              className={`${controlBtn} ${collapsed ? "w-full" : "px-2.5"}`}
             >
-              ⎋{!collapsed && <span>sign out</span>}
+              <IconSignOut size={16} />
+              {!collapsed && <span className="font-mono-data text-[0.66rem]">sign out</span>}
             </a>
           </div>
         )}
+
         {!collapsed && (
           <p className="font-mono-data mt-3 text-[0.62rem] leading-relaxed text-rail-faint">
             v0.1.0-rc · community project —<br />
