@@ -67,9 +67,35 @@ Cost attribution degrades gracefully: no telemetry step → daily per-key costs;
 
 ## Quick start
 
-*The full turnkey story ships with the MVP (Phase 1).* The goal it will be held to: `docker compose up`, install the GitHub App, and see your fleet in under 30 minutes.
+*The full turnkey story ships with the MVP (Phase 1).* The goal it will be held to: one command, install the GitHub App, and see your fleet in under 30 minutes.
 
-### Hacking on it today
+### Kubernetes (one command)
+
+```bash
+helm install scuttledeck oci://ghcr.io/scuttledeck/charts/scuttledeck \
+  --set github.org=your-org \
+  --set ingress.enabled=true --set ingress.host=scuttledeck.your.domain
+```
+
+Bundled Postgres, auto-generated secrets (persisted across upgrades — retrieve
+them with the commands helm prints), ingest + dashboard behind one host.
+Bring your own database with `--set postgres.enabled=false --set
+externalDatabaseUrl=…`. Chart source lives in [charts/scuttledeck](charts/scuttledeck).
+
+### Docker Compose
+
+```bash
+cp .env.example .env   # set GITHUB_WEBHOOK_SECRET, INGEST_TOKEN, GITHUB_ORG
+docker compose up -d   # Postgres + ingest on :8787
+```
+
+### Behind an LLM gateway?
+
+LiteLLM / Bedrock / Vertex setups work — per-run telemetry is client-side and
+validated against a real LiteLLM→Vertex deployment. See [docs/gateways.md](docs/gateways.md)
+for the three configuration rakes and which cost tiers apply.
+
+### Hacking on it locally
 
 ```bash
 pnpm install

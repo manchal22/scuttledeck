@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "scuttledeck.fullname" . }}-ingest
+  labels:
+    {{- include "scuttledeck.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: ingest
+  ports:
+    - name: http
+      port: 8787
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "scuttledeck.fullname" . }}-ingest
+  labels:
+    {{- include "scuttledeck.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.ingest.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: ingest
+  template:
+    metadata:
+      labels:
+        {{- include "scuttledeck.labels" . | nindent 8 }}
+        app.kubernetes.io/component: ingest
+      annotations:
+        # Roll pods when secrets change
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: ingest
+          image: "{{ .Values.ingest.image.repository }}:{{ include "scuttledeck.ingestTag" . }}"
+          imagePullPolicy: {{ .Values.ingest.image.pullPolicy }}
+          env:
+            - name: PORT
+              value: "8787"
+            - name: GITHUB_ORG
+              value: {{ required "set github.org" .Values.github.org | quote }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "scuttledeck.secretName" . }}
+                  key: DATABASE_URL
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "scuttledeck.secretName" . }}
+                  key: GITHUB_WEBHOOK_SECRET
+            - name: INGEST_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "scuttledeck.secretName" . }}
+                  key: INGEST_TOKEN
+          ports:
+            - name: http
+              containerPort: 8787
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          {{- with .Values.ingest.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

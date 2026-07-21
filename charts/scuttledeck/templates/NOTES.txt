@@ -1,0 +1,36 @@
+Scuttledeck is deploying. The watch begins.
+
+1. Retrieve your generated credentials:
+
+   WEBHOOK SECRET (for the GitHub App / webhook config):
+     kubectl get secret {{ include "scuttledeck.secretName" . }} -n {{ .Release.Namespace }} \
+       -o jsonpath='{.data.GITHUB_WEBHOOK_SECRET}' | base64 -d; echo
+
+   INGEST TOKEN (for the SCUTTLEDECK_TOKEN repo secret):
+     kubectl get secret {{ include "scuttledeck.secretName" . }} -n {{ .Release.Namespace }} \
+       -o jsonpath='{.data.INGEST_TOKEN}' | base64 -d; echo
+
+{{- if .Values.ingress.enabled }}
+
+2. Your endpoints (via ingress {{ .Values.ingress.host }}):
+     dashboard : https://{{ .Values.ingress.host }}/
+     webhooks  : https://{{ .Values.ingress.host }}/webhooks/github
+     telemetry : https://{{ .Values.ingress.host }}   (scuttledeck/setup `endpoint` input)
+{{- else }}
+
+2. No ingress enabled — for a quick look, port-forward:
+     kubectl port-forward svc/{{ include "scuttledeck.fullname" . }}-web 3000:3000 -n {{ .Release.Namespace }}
+     kubectl port-forward svc/{{ include "scuttledeck.fullname" . }}-ingest 8787:8787 -n {{ .Release.Namespace }}
+
+   GitHub webhooks and CI telemetry need a public URL — enable ingress:
+     --set ingress.enabled=true --set ingress.host=scuttledeck.your.domain
+{{- end }}
+
+3. In each repo workflow, add before anthropics/claude-code-action:
+     - uses: scuttledeck/setup@v1
+       with:
+         endpoint: <your public URL>
+         token: ${{ "{{" }} secrets.SCUTTLEDECK_TOKEN {{ "}}" }}
+
+Note: the ingest pod runs database migrations on boot; web may show as
+not-ready for a few seconds on first install while that completes.

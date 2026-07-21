@@ -1,0 +1,44 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "scuttledeck.fullname" . }}
+  labels:
+    {{- include "scuttledeck.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          # GitHub webhooks + CI telemetry → ingest
+          - path: /webhooks
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "scuttledeck.fullname" . }}-ingest
+                port: { name: http }
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "scuttledeck.fullname" . }}-ingest
+                port: { name: http }
+          # everything else → dashboard
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "scuttledeck.fullname" . }}-web
+                port: { name: http }
+{{- end }}
