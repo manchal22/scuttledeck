@@ -31,7 +31,7 @@ export function Sparkbars({
             width={barW}
             height={h}
             rx={1.5}
-            fill={b.runs === 0 ? "rgba(22,48,43,0.12)" : "#0a8a6a"}
+            fill={b.runs === 0 ? "var(--sd-bar-empty)" : "var(--sd-signal)"}
           >
             <title>{`${b.day}: ${b.runs} runs${b.failures ? `, ${b.failures} failed` : ""}`}</title>
           </rect>
@@ -65,7 +65,7 @@ export function RunsBarChart({ buckets }: { buckets: DayBucket[] }) {
           x2={width}
           y1={height - t * (height - 14)}
           y2={height - t * (height - 14)}
-          stroke="rgba(22,48,43,0.08)"
+          stroke="var(--sd-grid)"
           strokeDasharray="2 4"
         />
       ))}
@@ -78,16 +78,16 @@ export function RunsBarChart({ buckets }: { buckets: DayBucket[] }) {
         return (
           <g key={b.day}>
             {b.runs === 0 && (
-              <rect x={x} y={height - 1.5} width={barW} height={1.5} fill="rgba(22,48,43,0.12)" />
+              <rect x={x} y={height - 1.5} width={barW} height={1.5} fill="var(--sd-bar-empty)" />
             )}
             {hOk > 0 && (
-              <rect x={x} y={height - hOk} width={barW} height={hOk} rx={3} fill="#0a8a6a">
+              <rect x={x} y={height - hOk} width={barW} height={hOk} rx={3} fill="var(--sd-signal)">
                 <title>{`${b.day}: ${okRuns} succeeded`}</title>
               </rect>
             )}
             {hFail > 0 && (
               // failure segment sits above with a 2px surface gap
-              <rect x={x} y={height - hOk - hFail - 2} width={barW} height={hFail} rx={3} fill="#c62f27">
+              <rect x={x} y={height - hOk - hFail - 2} width={barW} height={hFail} rx={3} fill="var(--sd-crit)">
                 <title>{`${b.day}: ${b.failures} failed`}</title>
               </rect>
             )}
@@ -99,7 +99,7 @@ export function RunsBarChart({ buckets }: { buckets: DayBucket[] }) {
                 textAnchor="middle"
                 className="font-mono-data"
                 fontSize="10"
-                fill="#51625b"
+                fill="var(--sd-ink-soft)"
               >
                 {b.runs}
               </text>
@@ -111,7 +111,7 @@ export function RunsBarChart({ buckets }: { buckets: DayBucket[] }) {
                 textAnchor="middle"
                 fontSize="9.5"
                 className="font-mono-data"
-                fill="#8a948c"
+                fill="var(--sd-ink-faint)"
               >
                 {day}
               </text>
@@ -132,7 +132,7 @@ export function SpendBars({ rows }: { rows: RepoSpend[] }) {
         const pct = Math.max(1.5, (r.costUsd / max) * 100);
         const name = r.repoFullName.split("/")[1] ?? r.repoFullName;
         return (
-          <div key={r.repoFullName} className="grid grid-cols-[9rem_1fr_5.5rem] items-center gap-3">
+          <div key={r.repoFullName} className="grid grid-cols-[minmax(9rem,14rem)_1fr_5.5rem] items-center gap-3">
             <span className="font-mono-data truncate text-[0.75rem] text-ink-soft" title={r.repoFullName}>
               {name}
             </span>

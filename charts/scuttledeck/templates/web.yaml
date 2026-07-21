@@ -6,6 +6,10 @@ metadata:
     {{- include "scuttledeck.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.web.service.type }}
+  {{- with .Values.web.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: web
@@ -53,6 +57,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "scuttledeck.secretName" . }}
                   key: DASHBOARD_PASSWORD
+            - name: SESSION_TTL_HOURS
+              value: {{ .Values.web.sessionTtlHours | quote }}
           ports:
             - name: http
               containerPort: 3000

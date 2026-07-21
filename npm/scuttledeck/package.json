@@ -1,6 +1,6 @@
 {
   "name": "scuttledeck",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Fleet monitoring for the Claude Code GitHub Action — self-hosted dashboard for runs, PRs, and true per-run cost. This package currently ships a pointer CLI; the full CLI is on the roadmap.",
   "license": "Apache-2.0",
   "bin": {

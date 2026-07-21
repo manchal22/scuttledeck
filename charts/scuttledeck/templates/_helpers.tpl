@@ -36,9 +36,9 @@ Secret (upgrades never rotate silently) > freshly generated.
 {{- end }}
 
 {{- define "scuttledeck.ingestTag" -}}
-{{ .Values.ingest.image.tag | default "latest" }}
+{{ .Values.ingest.image.tag | default .Chart.AppVersion }}
 {{- end }}
 
 {{- define "scuttledeck.webTag" -}}
-{{ .Values.web.image.tag | default "latest" }}
+{{ .Values.web.image.tag | default .Chart.AppVersion }}
 {{- end }}

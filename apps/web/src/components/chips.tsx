@@ -1,21 +1,18 @@
-const STATUS_STYLES: Record<string, { fg: string; bg: string; icon: string; label: string }> = {
-  success: { fg: "#178a4c", bg: "rgba(23,138,76,0.1)", icon: "✓", label: "success" },
-  failure: { fg: "#c62f27", bg: "rgba(198,47,39,0.09)", icon: "✕", label: "failure" },
-  cancelled: { fg: "#51625b", bg: "rgba(81,98,91,0.1)", icon: "⊘", label: "cancelled" },
-  timed_out: { fg: "#b8860b", bg: "rgba(184,134,11,0.12)", icon: "◷", label: "timed out" },
-  in_progress: { fg: "#0b6bcb", bg: "rgba(11,107,203,0.09)", icon: "●", label: "running" },
-  queued: { fg: "#51625b", bg: "rgba(81,98,91,0.1)", icon: "○", label: "queued" },
+const STATUS: Record<string, { tone: string; icon: string; label: string }> = {
+  success: { tone: "chip-good", icon: "✓", label: "success" },
+  failure: { tone: "chip-crit", icon: "✕", label: "failure" },
+  cancelled: { tone: "chip-muted", icon: "⊘", label: "cancelled" },
+  timed_out: { tone: "chip-warn", icon: "◷", label: "timed out" },
+  in_progress: { tone: "chip-info", icon: "●", label: "running" },
+  queued: { tone: "chip-muted", icon: "○", label: "queued" },
 };
 
 /** Run state chip — icon + label always, never color alone. */
 export function StatusChip({ status, conclusion }: { status: string; conclusion: string | null }) {
   const key = status === "completed" ? (conclusion ?? "cancelled") : status;
-  const s = STATUS_STYLES[key] ?? STATUS_STYLES["queued"]!;
+  const s = STATUS[key] ?? STATUS["queued"]!;
   return (
-    <span
-      className="font-mono-data inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.7rem] font-medium"
-      style={{ color: s.fg, backgroundColor: s.bg }}
-    >
+    <span className={`chip ${s.tone}`}>
       <span aria-hidden="true" className={key === "in_progress" ? "animate-blip" : ""}>
         {s.icon}
       </span>
@@ -24,9 +21,15 @@ export function StatusChip({ status, conclusion }: { status: string; conclusion:
   );
 }
 
+/** PR lifecycle chip. */
+export function PrStateChip({ state, merged }: { state: string; merged: boolean }) {
+  if (merged) return <span className="chip chip-signal">⇥ merged</span>;
+  if (state === "closed") return <span className="chip chip-muted">⊘ closed</span>;
+  return <span className="chip chip-info">◇ open</span>;
+}
+
 /**
  * Cost provenance — every dollar figure is labeled with where it came from.
- * exact/heuristic = OTel per-run; subscription installs have tokens, no cost.
  */
 export function ProvenanceChip({
   source,
@@ -39,33 +42,24 @@ export function ProvenanceChip({
 }) {
   if (!source) return null;
   let text: string;
-  let tone: "signal" | "warn" | "muted" = "signal";
+  let tone = "chip-signal";
   if (!hasCost) {
     text = "tokens · included in subscription";
-    tone = "muted";
+    tone = "chip-muted";
   } else if (source === "otel" && confidence === "exact") {
     text = "otel · exact";
   } else if (source === "otel" && confidence === "heuristic") {
     text = "otel · heuristic match";
-    tone = "warn";
+    tone = "chip-warn";
   } else if (source === "analytics_api") {
     text = "analytics api · daily";
-    tone = "muted";
+    tone = "chip-muted";
   } else {
     text = `${source} · ${confidence ?? "unmatched"}`;
-    tone = "muted";
+    tone = "chip-muted";
   }
-  const styles = {
-    signal: { color: "#0b6b54", backgroundColor: "rgba(10,138,106,0.09)" },
-    warn: { color: "#8a6508", backgroundColor: "rgba(184,134,11,0.12)" },
-    muted: { color: "#51625b", backgroundColor: "rgba(81,98,91,0.08)" },
-  }[tone];
   return (
-    <span
-      className="font-mono-data inline-flex items-center rounded-full px-2 py-0.5 text-[0.65rem]"
-      style={styles}
-      title="Cost provenance"
-    >
+    <span className={`chip ${tone}`} title="Cost provenance" style={{ fontSize: "0.65rem" }}>
       {text}
     </span>
   );
@@ -77,12 +71,8 @@ export function VersionBadge({ version, latest }: { version: string | null; late
   const behind = latest !== null && version !== latest && /^v?\d/.test(version);
   return (
     <span
-      className="font-mono-data inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.68rem]"
-      style={
-        behind
-          ? { color: "#8a6508", borderColor: "rgba(184,134,11,0.45)", backgroundColor: "rgba(184,134,11,0.08)" }
-          : { color: "#0b6b54", borderColor: "rgba(10,138,106,0.35)" }
-      }
+      className={`chip ${behind ? "chip-warn" : "chip-signal"}`}
+      style={{ fontSize: "0.68rem", border: "1px solid currentColor", background: "transparent" }}
     >
       {version}
       {behind && <span title={`fleet latest is ${latest}`}>▲ behind</span>}

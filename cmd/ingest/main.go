@@ -1,5 +1,6 @@
 // The Scuttledeck ingest service: GitHub webhooks + OTLP telemetry in,
-// normalized runs and correlated agent sessions out.
+// normalized runs and correlated agent sessions out, plus the scheduled
+// planes (discovery, Anthropic pollers, alert engine, retention).
 package main
 
 import (
@@ -7,10 +8,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/scuttledeck/scuttledeck/internal/db"
 	"github.com/scuttledeck/scuttledeck/internal/httpapi"
+	"github.com/scuttledeck/scuttledeck/internal/poller"
 	"github.com/scuttledeck/scuttledeck/internal/queue"
 )
 
@@ -36,11 +39,11 @@ func main() {
 
 	// Bootstrap the default installation from env so a fresh deploy can
 	// receive telemetry with zero UI. The raw token is never stored.
+	org := os.Getenv("GITHUB_ORG")
+	if org == "" {
+		org = "default"
+	}
 	if token := os.Getenv("INGEST_TOKEN"); token != "" {
-		org := os.Getenv("GITHUB_ORG")
-		if org == "" {
-			org = "default"
-		}
 		if _, err := pool.Exec(ctx, `
 			insert into installation (org, ingest_token_hash) values ($1, $2)
 			on conflict (org) do update set ingest_token_hash = excluded.ingest_token_hash`,
@@ -50,9 +53,37 @@ func main() {
 		log.Printf("[boot] installation %q ready (ingest token hash registered)", org)
 	}
 
+	githubToken := os.Getenv("GITHUB_TOKEN")
+
 	worker := queue.NewWorker(pool, time.Second)
-	queue.RegisterDefaultHandlers(worker, pool)
+	queue.RegisterDefaultHandlers(worker, pool, queue.HandlerOptions{
+		OnWorkflowFilesChanged: func(repoFullName string) {
+			if githubToken == "" {
+				return
+			}
+			log.Printf("[discovery] workflow files changed in %s — rescanning", repoFullName)
+			go func() {
+				if err := poller.RunDiscovery(context.Background(), pool, githubToken, ""); err != nil {
+					log.Printf("[discovery] rescan: %v", err)
+				}
+			}()
+		},
+	})
 	worker.Start(ctx)
+
+	retentionDays := 30
+	if v := os.Getenv("RETENTION_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			retentionDays = n
+		}
+	}
+	poller.Start(ctx, pool, poller.Config{
+		GithubToken:       githubToken,
+		GithubOrg:         "",
+		AnthropicAdminKey: os.Getenv("ANTHROPIC_ADMIN_KEY"),
+		SlackWebhookURL:   os.Getenv("SLACK_WEBHOOK_URL"),
+		RetentionDays:     retentionDays,
+	})
 
 	server := &httpapi.Server{Pool: pool, WebhookSecret: webhookSecret}
 	port := os.Getenv("PORT")

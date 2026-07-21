@@ -1,55 +1,123 @@
 @import "tailwindcss";
 
 /*
- * Scuttledeck design tokens — "ship's chart room."
- * Warm chart-paper ground, deep sea-green ink, teal signal.
- * Chart palette validated (CVD + contrast) against #fbfaf5:
- *   categorical: #0a8a6a #4f5bd5 #c05621 #8d3f78
- *   status:      #178a4c #b8860b #0b6bcb #c62f27  (always icon + label)
+ * Scuttledeck design tokens — "ship's chart room" (light) and
+ * "night watch" (dark). All colors route through runtime CSS variables so
+ * the theme switches without a reload. Chart palettes validated (CVD +
+ * contrast) per surface:
+ *   light categorical #0a8a6a #4f5bd5 #c05621 #8d3f78 · status #178a4c #b8860b #0b6bcb #c62f27
+ *   dark  categorical #27a37f #7b84e8 #d0713c #c76fae · status #28a862 #b3860a #4b91e0 #d94b42
+ * Status is never color-alone: chips always pair icon + label.
  */
 @theme {
-  --color-ground: #f3f0e7;
-  --color-surface: #fbfaf5;
-  --color-surface-2: #ece7d8;
-  --color-line: #d9d3c0;
-  --color-line-soft: #e7e2d2;
-  --color-ink: #16302b;
-  --color-ink-soft: #51625b;
-  --color-ink-faint: #8a948c;
-
-  --color-rail: #0e211b;
-  --color-rail-2: #16302a;
-  --color-rail-ink: #cbd8d1;
-  --color-rail-faint: #64796f;
-
-  --color-signal: #0a8a6a;
-  --color-signal-deep: #0b6b54;
-  --color-signal-bright: #2fd4a4;
-  --color-signal-wash: rgba(10, 138, 106, 0.09);
-
-  --color-cat-1: #0a8a6a;
-  --color-cat-2: #4f5bd5;
-  --color-cat-3: #c05621;
-  --color-cat-4: #8d3f78;
-
-  --color-good: #178a4c;
-  --color-warn: #b8860b;
-  --color-info: #0b6bcb;
-  --color-crit: #c62f27;
+  --color-ground: var(--sd-ground);
+  --color-surface: var(--sd-surface);
+  --color-surface-2: var(--sd-surface2);
+  --color-line: var(--sd-line);
+  --color-line-soft: var(--sd-line-soft);
+  --color-ink: var(--sd-ink);
+  --color-ink-soft: var(--sd-ink-soft);
+  --color-ink-faint: var(--sd-ink-faint);
+  --color-rail: var(--sd-rail);
+  --color-rail-2: var(--sd-rail2);
+  --color-rail-ink: var(--sd-rail-ink);
+  --color-rail-faint: var(--sd-rail-faint);
+  --color-signal: var(--sd-signal);
+  --color-signal-deep: var(--sd-signal-deep);
+  --color-signal-bright: var(--sd-signal-bright);
+  --color-signal-wash: var(--sd-signal-wash);
+  --color-good: var(--sd-good);
+  --color-warn: var(--sd-warn);
+  --color-info: var(--sd-info);
+  --color-crit: var(--sd-crit);
 
   --font-display: var(--font-bricolage);
   --font-body: var(--font-instrument);
   --font-mono: var(--font-spline-mono);
 }
 
+:root {
+  --sd-ground: #f3f0e7;
+  --sd-surface: #fbfaf5;
+  --sd-surface2: #ece7d8;
+  --sd-line: #d9d3c0;
+  --sd-line-soft: #e7e2d2;
+  --sd-ink: #16302b;
+  --sd-ink-soft: #51625b;
+  --sd-ink-faint: #8a948c;
+  --sd-rail: #0e211b;
+  --sd-rail2: #16302a;
+  --sd-rail-ink: #cbd8d1;
+  --sd-rail-faint: #64796f;
+  --sd-signal: #0a8a6a;
+  --sd-signal-deep: #0b6b54;
+  --sd-signal-bright: #2fd4a4;
+  --sd-signal-wash: rgba(10, 138, 106, 0.09);
+  --sd-good: #178a4c;
+  --sd-good-bg: rgba(23, 138, 76, 0.1);
+  --sd-warn: #b8860b;
+  --sd-warn-deep: #8a6508;
+  --sd-warn-bg: rgba(184, 134, 11, 0.12);
+  --sd-info: #0b6bcb;
+  --sd-info-bg: rgba(11, 107, 203, 0.09);
+  --sd-crit: #c62f27;
+  --sd-crit-bg: rgba(198, 47, 39, 0.09);
+  --sd-muted: #51625b;
+  --sd-muted-bg: rgba(81, 98, 91, 0.1);
+  --sd-grid: rgba(22, 48, 43, 0.08);
+  --sd-bar-empty: rgba(22, 48, 43, 0.12);
+  --sd-paper-grid: rgba(22, 48, 43, 0.045);
+  --sd-cat-1: #0a8a6a;
+  --sd-cat-2: #4f5bd5;
+  --sd-cat-3: #c05621;
+  --sd-cat-4: #8d3f78;
+}
+
+html[data-theme="dark"] {
+  --sd-ground: #0e1c17;
+  --sd-surface: #132622;
+  --sd-surface2: #0b1713;
+  --sd-line: #26463a;
+  --sd-line-soft: #1c3a2f;
+  --sd-ink: #dfe9e2;
+  --sd-ink-soft: #9db3a8;
+  --sd-ink-faint: #64796f;
+  --sd-rail: #0a1613;
+  --sd-rail2: #143026;
+  --sd-rail-ink: #cbd8d1;
+  --sd-rail-faint: #64796f;
+  --sd-signal: #27a37f;
+  --sd-signal-deep: #2fd4a4;
+  --sd-signal-bright: #2fd4a4;
+  --sd-signal-wash: rgba(39, 163, 127, 0.12);
+  --sd-good: #28a862;
+  --sd-good-bg: rgba(40, 168, 98, 0.14);
+  --sd-warn: #b3860a;
+  --sd-warn-deep: #d9a514;
+  --sd-warn-bg: rgba(179, 134, 10, 0.16);
+  --sd-info: #4b91e0;
+  --sd-info-bg: rgba(75, 145, 224, 0.14);
+  --sd-crit: #d94b42;
+  --sd-crit-bg: rgba(217, 75, 66, 0.14);
+  --sd-muted: #9db3a8;
+  --sd-muted-bg: rgba(157, 179, 168, 0.12);
+  --sd-grid: rgba(223, 233, 226, 0.08);
+  --sd-bar-empty: rgba(223, 233, 226, 0.14);
+  --sd-paper-grid: rgba(223, 233, 226, 0.035);
+  --sd-cat-1: #27a37f;
+  --sd-cat-2: #7b84e8;
+  --sd-cat-3: #d0713c;
+  --sd-cat-4: #c76fae;
+}
+
 body {
-  background-color: var(--color-ground);
-  color: var(--color-ink);
+  background-color: var(--sd-ground);
+  color: var(--sd-ink);
   font-family: var(--font-body);
   /* faint chart-grid, like plotting paper */
   background-image:
-    linear-gradient(to right, rgba(22, 48, 43, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(22, 48, 43, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, var(--sd-paper-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--sd-paper-grid) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -63,7 +131,7 @@ body {
 
 /* nautical hairline: solid rule with a dotted "sounding line" beneath */
 .rule-sounding {
-  border-bottom: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--sd-line);
   position: relative;
 }
 .rule-sounding::after {
@@ -72,8 +140,27 @@ body {
   left: 0;
   right: 0;
   bottom: -4px;
-  border-bottom: 1px dotted var(--color-line);
+  border-bottom: 1px dotted var(--sd-line);
 }
+
+/* status + provenance chips — icon + label always, never color alone */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.chip-good { color: var(--sd-good); background: var(--sd-good-bg); }
+.chip-warn { color: var(--sd-warn-deep); background: var(--sd-warn-bg); }
+.chip-info { color: var(--sd-info); background: var(--sd-info-bg); }
+.chip-crit { color: var(--sd-crit); background: var(--sd-crit-bg); }
+.chip-muted { color: var(--sd-muted); background: var(--sd-muted-bg); }
+.chip-signal { color: var(--sd-signal-deep); background: var(--sd-signal-wash); }
 
 @keyframes blip {
   0%, 100% { opacity: 1; }
@@ -81,4 +168,36 @@ body {
 }
 .animate-blip {
   animation: blip 1.6s ease-in-out infinite;
+}
+
+/* theme switch: View Transitions crossfade, or property-transition fallback */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+}
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 300ms ease-out,
+    color 300ms ease-out,
+    border-color 300ms ease-out,
+    fill 300ms ease-out,
+    stroke 300ms ease-out !important;
+}
+
+/* radar sweep rotation for the animated logo (login page) */
+@keyframes sweep-rotate {
+  to { transform: rotate(360deg); }
+}
+.logo-sweep {
+  animation: sweep-rotate 6s linear infinite;
+  transform-origin: 32px 32px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-sweep, .animate-blip {
+    animation: none;
+  }
 }

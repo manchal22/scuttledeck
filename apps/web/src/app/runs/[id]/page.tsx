@@ -77,7 +77,7 @@ export default async function RunDetailPage({
                 <div>
                   <p className="font-mono-data text-[0.62rem] uppercase tracking-[0.18em] text-ink-faint">cost</p>
                   <p className="font-mono-data text-[2.1rem] leading-tight font-medium">
-                    {hasCost ? usd(s.costUsd, 4) : "$0.00"}
+                    {hasCost ? usd(s.costUsd) : "$0.00"}
                   </p>
                 </div>
                 <ProvenanceChip source={s.source} confidence={s.confidence} hasCost={hasCost} />

@@ -2,24 +2,41 @@ import Link from "next/link";
 import { StatusChip } from "@/components/chips";
 import { EmptyState, Panel } from "@/components/panels";
 import { compactTokens, duration, relativeTime, usd } from "@/lib/format";
-import { filterOptions, runsList } from "@/lib/queries";
+import { filterOptions, runsCount, runsList } from "@/lib/queries";
+import { RunsFilters } from "./filters";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_OPTIONS = ["success", "failure", "in_progress", "queued"] as const;
+const PAGE_SIZE = 50;
 
 export default async function RunsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; repo?: string; event?: string }>;
+  searchParams: Promise<{ status?: string; repo?: string; event?: string; since?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const filters = {
     status: params.status || undefined,
     repo: params.repo || undefined,
     event: params.event || undefined,
+    since: params.since || undefined,
   };
-  const [rows, options] = await Promise.all([runsList(filters, 100), filterOptions()]);
+  const page = Math.max(1, Number(params.page) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const [rows, total, options] = await Promise.all([
+    runsList(filters, PAGE_SIZE, offset),
+    runsCount(filters),
+    filterOptions(),
+  ]);
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const pageLink = (p: number) => {
+    const next = new URLSearchParams();
+    for (const [k, v] of Object.entries(filters)) if (v) next.set(k, v);
+    if (p > 1) next.set("page", String(p));
+    return `/runs${next.size ? `?${next.toString()}` : ""}`;
+  };
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -30,66 +47,21 @@ export default async function RunsPage({
         <h1 className="font-display mt-1 text-[1.9rem] font-bold tracking-tight">Every sortie</h1>
       </header>
 
-      {/* filter row — one row above the charts/tables, per interaction spec */}
-      <form method="get" className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="block">
-          <span className="font-mono-data mb-1 block text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint">status</span>
-          <select
-            name="status"
-            defaultValue={filters.status ?? ""}
-            className="rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm"
-          >
-            <option value="">all</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s.replace("_", " ")}</option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="font-mono-data mb-1 block text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint">repo</span>
-          <select
-            name="repo"
-            defaultValue={filters.repo ?? ""}
-            className="max-w-56 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm"
-          >
-            <option value="">all</option>
-            {options.repos.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="font-mono-data mb-1 block text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint">trigger</span>
-          <select
-            name="event"
-            defaultValue={filters.event ?? ""}
-            className="rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm"
-          >
-            <option value="">all</option>
-            {options.events.map((e) => (
-              <option key={e} value={e}>{e}</option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="rounded-md bg-signal px-4 py-1.5 text-sm font-medium text-white hover:bg-signal-deep"
-        >
-          Apply
-        </button>
-        {(filters.status || filters.repo || filters.event) && (
-          <Link href="/runs" className="py-1.5 text-sm text-ink-soft underline">
-            clear
-          </Link>
-        )}
-      </form>
+      <RunsFilters repos={options.repos} events={options.events} />
 
       {rows.length === 0 ? (
         <EmptyState title="No runs match">
-          <p>Adjust the filters, or wait for the next webhook delivery.</p>
+          <p>
+            {total === 0 && !Object.values(filters).some(Boolean)
+              ? "No runs recorded yet — they appear here as webhooks deliver."
+              : "Nothing in this filter combination. Loosen a filter or widen the time window."}
+          </p>
         </EmptyState>
       ) : (
-        <Panel title="Runs" meta={`${rows.length} shown`}>
+        <Panel
+          title="Runs"
+          meta={`${offset + 1}–${Math.min(offset + rows.length, total)} of ${total}`}
+        >
           <table className="w-full text-sm">
             <thead>
               <tr className="font-mono-data text-left text-[0.62rem] uppercase tracking-[0.14em] text-ink-faint">
@@ -136,6 +108,21 @@ export default async function RunsPage({
               ))}
             </tbody>
           </table>
+          {lastPage > 1 && (
+            <div className="font-mono-data mt-4 flex items-center justify-between border-t border-line-soft pt-3 text-[0.75rem]">
+              {page > 1 ? (
+                <Link href={pageLink(page - 1)} className="text-signal-deep underline">← newer</Link>
+              ) : (
+                <span className="text-ink-faint">← newer</span>
+              )}
+              <span className="text-ink-faint">page {page} / {lastPage}</span>
+              {page < lastPage ? (
+                <Link href={pageLink(page + 1)} className="text-signal-deep underline">older →</Link>
+              ) : (
+                <span className="text-ink-faint">older →</span>
+              )}
+            </div>
+          )}
         </Panel>
       )}
     </div>

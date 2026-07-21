@@ -10,7 +10,8 @@ import { createHmac, createHash, timingSafeEqual } from "node:crypto";
  */
 
 export const SESSION_COOKIE = "sd_session";
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_TTL_MS =
+  Number(process.env.SESSION_TTL_HOURS ?? 168) * 60 * 60 * 1000;
 
 export function dashboardPassword(): string | undefined {
   const p = process.env.DASHBOARD_PASSWORD;
