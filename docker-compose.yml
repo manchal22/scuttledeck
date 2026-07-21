@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: scuttledeck
+      POSTGRES_PASSWORD: scuttledeck
+      POSTGRES_DB: scuttledeck
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scuttledeck -d scuttledeck"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ingest:
+    build:
+      context: .
+      dockerfile: apps/ingest/Dockerfile
+    environment:
+      DATABASE_URL: postgres://scuttledeck:scuttledeck@postgres:5432/scuttledeck
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-change-me}
+      INGEST_TOKEN: ${INGEST_TOKEN:-}
+      GITHUB_ORG: ${GITHUB_ORG:-default}
+      PORT: "8787"
+    ports:
+      - "8787:8787"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,0 +1,540 @@
+<title>Scuttledeck — Fleet Monitoring for the Claude Code GitHub Action</title>
+<style>
+  :root {
+    --ground: #f5f7f6;
+    --surface: #ffffff;
+    --surface-2: #eceff0;
+    --ink: #1a2b27;
+    --ink-soft: #56655f;
+    --ink-faint: #8a958f;
+    --accent: #0e7e6b;
+    --accent-soft: #0e7e6b1a;
+    --line: #d9dfdc;
+    --ok: #1a7f37;
+    --warn: #9a6700;
+    --crit: #c03328;
+    --code-bg: #eef1f0;
+    --shadow: 0 1px 2px rgba(26, 43, 39, .06), 0 8px 24px rgba(26, 43, 39, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #101614;
+      --surface: #171f1c;
+      --surface-2: #1e2825;
+      --ink: #e2eae6;
+      --ink-soft: #9fb0a9;
+      --ink-faint: #6b7a74;
+      --accent: #34b39a;
+      --accent-soft: #34b39a21;
+      --line: #2a3531;
+      --ok: #4cc26a;
+      --warn: #d9a521;
+      --crit: #e5645a;
+      --code-bg: #1c2623;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f5f7f6; --surface: #ffffff; --surface-2: #eceff0;
+    --ink: #1a2b27; --ink-soft: #56655f; --ink-faint: #8a958f;
+    --accent: #0e7e6b; --accent-soft: #0e7e6b1a; --line: #d9dfdc;
+    --ok: #1a7f37; --warn: #9a6700; --crit: #c03328; --code-bg: #eef1f0;
+    --shadow: 0 1px 2px rgba(26, 43, 39, .06), 0 8px 24px rgba(26, 43, 39, .05);
+  }
+  :root[data-theme="dark"] {
+    --ground: #101614; --surface: #171f1c; --surface-2: #1e2825;
+    --ink: #e2eae6; --ink-soft: #9fb0a9; --ink-faint: #6b7a74;
+    --accent: #34b39a; --accent-soft: #34b39a21; --line: #2a3531;
+    --ok: #4cc26a; --warn: #d9a521; --crit: #e5645a; --code-bg: #1c2623;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ---------- type ---------- */
+  h1, h2, h3, .mono { font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace; }
+  h1 { font-size: 2rem; line-height: 1.2; letter-spacing: -.02em; margin: .4em 0 .3em; text-wrap: balance; }
+  h2 { font-size: 1.3rem; letter-spacing: -.01em; margin: 0 0 .8em; text-wrap: balance; }
+  h3 { font-size: 1.02rem; margin: 2em 0 .6em; }
+  p, li { max-width: 68ch; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  strong { font-weight: 650; }
+
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600;
+  }
+  section { margin-top: 72px; scroll-margin-top: 24px; }
+  section > .eyebrow { display: block; margin-bottom: 6px; }
+
+  header.masthead { padding: 72px 0 20px; border-bottom: 1px solid var(--line); }
+  .masthead .sub { color: var(--ink-soft); font-size: 1.06rem; max-width: 62ch; margin-top: 8px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 20px; font-family: ui-monospace, Menlo, monospace; font-size: .75rem; color: var(--ink-faint); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 18px 0; border-bottom: 1px solid var(--line); font-family: ui-monospace, Menlo, monospace; font-size: .78rem; }
+  nav.toc a { color: var(--ink-soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+
+  /* ---------- components ---------- */
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .86em; background: var(--code-bg); padding: .12em .38em; border-radius: 4px; }
+  pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: .8rem; line-height: 1.6; }
+  pre.code code { background: none; padding: 0; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 14px; }
+  .card h3:first-child { margin-top: 0; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+  th { text-align: left; font-family: ui-monospace, Menlo, monospace; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 600; }
+  th, td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td { color: var(--ink-soft); }
+  td:first-child { color: var(--ink); white-space: nowrap; }
+  td code { white-space: nowrap; }
+
+  .pill { display: inline-block; font-family: ui-monospace, Menlo, monospace; font-size: .68rem; font-weight: 600; letter-spacing: .05em; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+  .pill.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .pill.crit { color: var(--crit); background: color-mix(in srgb, var(--crit) 12%, transparent); }
+  .pill.accent { color: var(--accent); background: var(--accent-soft); }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; }
+  .callout.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 8px; }
+
+  .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; overflow-x: auto; }
+  .diagram pre.mermaid { margin: 0; }
+
+  ol.phases { list-style: none; padding: 0; margin: 0; counter-reset: phase -1; }
+  ol.phases li { counter-increment: phase; display: grid; grid-template-columns: 56px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  ol.phases li:last-child { border-bottom: none; }
+  ol.phases li::before { content: "P" counter(phase); font-family: ui-monospace, Menlo, monospace; font-weight: 700; color: var(--accent); font-size: 1.1rem; padding-top: 2px; }
+  ol.phases .ph-title { font-weight: 650; }
+  ol.phases .ph-scope { color: var(--ink-soft); font-size: .92rem; margin-top: 4px; }
+  ol.phases .ph-exit { font-family: ui-monospace, Menlo, monospace; font-size: .74rem; color: var(--ink-faint); margin-top: 8px; }
+  ol.phases .ph-exit b { color: var(--accent); font-weight: 600; }
+
+  /* ---------- dashboard mock ---------- */
+  .mock { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; font-size: .8rem; }
+  .mock-top { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--line); font-family: ui-monospace, Menlo, monospace; }
+  .mock-top .logo { font-weight: 700; color: var(--accent); }
+  .mock-top .tabs { display: flex; gap: 14px; color: var(--ink-faint); font-size: .72rem; }
+  .mock-top .tabs .on { color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border-bottom: 1px solid var(--line); }
+  .kpi { background: var(--surface); padding: 14px 18px; }
+  .kpi .k-label { font-family: ui-monospace, Menlo, monospace; font-size: .64rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); }
+  .kpi .k-val { font-family: ui-monospace, Menlo, monospace; font-size: 1.45rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .kpi .k-delta { font-size: .7rem; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .up { color: var(--ok); } .down { color: var(--crit); } .flat { color: var(--ink-faint); }
+  .mock-body { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1px; background: var(--line); }
+  .panel { background: var(--surface); padding: 14px 18px; min-width: 0; }
+  .panel h4 { margin: 0 0 10px; font-family: ui-monospace, Menlo, monospace; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); font-weight: 600; }
+  .runrow { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .runrow:last-child { border-bottom: none; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.ok { background: var(--ok); } .dot.crit { background: var(--crit); } .dot.warn { background: var(--warn); }
+  .runrow .r-repo { font-family: ui-monospace, Menlo, monospace; font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .runrow .r-kind { color: var(--ink-faint); font-size: .7rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .runrow .r-cost { font-family: ui-monospace, Menlo, monospace; font-size: .72rem; color: var(--ink-soft); }
+  .bar { display: grid; grid-template-columns: 120px 1fr 52px; align-items: center; gap: 10px; padding: 6px 0; font-variant-numeric: tabular-nums; }
+  .bar .b-name { font-family: ui-monospace, Menlo, monospace; font-size: .7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar .b-track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+  .bar .b-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+  .bar .b-val { font-family: ui-monospace, Menlo, monospace; font-size: .7rem; color: var(--ink-soft); text-align: right; }
+  @media (max-width: 640px) { .mock-body { grid-template-columns: 1fr; } .mock-top .tabs { display: none; } }
+
+  figcaption { font-size: .78rem; color: var(--ink-faint); margin-top: 10px; font-family: ui-monospace, Menlo, monospace; }
+  figure { margin: 24px 0; }
+  hr.soft { border: none; border-top: 1px solid var(--line); margin: 40px 0; }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <span class="eyebrow">Design document · v0.1 · July 2026</span>
+  <h1>Scuttledeck</h1>
+  <p class="sub">An open-source control plane for the Claude Code GitHub Action: which repos run it, what it's doing on your PRs, what it costs — one dashboard for the whole fleet.</p>
+  <div class="meta-row">
+    <span>STATUS: PROPOSAL</span>
+    <span>LICENSE: APACHE-2.0</span>
+    <span>DEPLOY: SELF-HOSTED (DOCKER)</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#gap">01 The gap</a>
+  <a href="#users">02 Users</a>
+  <a href="#data">03 Data sources</a>
+  <a href="#arch">04 Architecture</a>
+  <a href="#cost">05 Cost attribution</a>
+  <a href="#model">06 Data model</a>
+  <a href="#ui">07 Dashboard</a>
+  <a href="#security">08 Security</a>
+  <a href="#roadmap">09 Roadmap</a>
+  <a href="#stack">10 Stack</a>
+  <a href="#risks">11 Risks</a>
+</nav>
+
+<!-- ============================================================ -->
+<section id="gap">
+  <span class="eyebrow">01 · Problem</span>
+  <h2>The gap: agents are running CI, and nobody can see the fleet</h2>
+  <p>Teams are wiring <code>anthropics/claude-code-action</code> into dozens of repos — <code>@claude</code> mentions, automated PR review, scheduled maintenance jobs. Each run is an autonomous agent spending real tokens and writing real code. Today the only way to answer basic operational questions is to click through GitHub's Actions tab repo by repo:</p>
+  <ul>
+    <li><strong>Adoption</strong> — which of our 200 repos actually have the action installed, and on which triggers?</li>
+    <li><strong>Activity</strong> — how many PRs did Claude review this week? How many did it open? What's the failure rate?</li>
+    <li><strong>Cost</strong> — what did agentic CI cost this month, by repo, by workflow, by model? What does one PR review cost?</li>
+    <li><strong>Health</strong> — which workflows are failing, timing out, or burning tokens abnormally?</li>
+  </ul>
+  <p>Nothing on the market answers these together. Anthropic ships no UI for the action (GitHub <em>is</em> the UI). The Anthropic Console shows org-level spend but knows nothing about repos or PRs. Existing community dashboards (claudecodeui, claude-code-webui, Agent Monitor) target local CLI sessions, not CI. Datadog/Honeycomb can receive Claude Code's OpenTelemetry metrics, but that's a build-it-yourself dashboard with no GitHub context and no turnkey story.</p>
+  <div class="callout">
+    <p><strong>Thesis:</strong> the winning shape is a self-hostable GitHub App + telemetry collector that joins three data planes — GitHub events, Claude Code OpenTelemetry, and Anthropic Admin APIs — into one PR-centric, cost-aware fleet view. Think "Codecov for agentic CI."</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="users">
+  <span class="eyebrow">02 · Users</span>
+  <h2>Who it serves, and the question each one asks</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Platform / DevEx engineer <span class="pill accent">PRIMARY</span></h3>
+      <p>Owns the org-wide rollout. Asks: <em>"Where is the action installed, is it healthy, and which workflow configs drift from our golden template?"</em> Needs fleet inventory, failure alerts, config visibility.</p>
+    </div>
+    <div class="card">
+      <h3>Engineering manager</h3>
+      <p>Justifies the spend. Asks: <em>"How many PRs is Claude actually reviewing or authoring, and is that number growing?"</em> Needs adoption trends, per-team activity, PR outcomes.</p>
+    </div>
+    <div class="card">
+      <h3>FinOps / budget owner</h3>
+      <p>Watches the bill. Asks: <em>"What does this cost per repo and per PR, and warn me before a runaway loop burns $500."</em> Needs cost breakdowns, unit economics, budget alerts.</p>
+    </div>
+    <div class="card">
+      <h3>Security engineer</h3>
+      <p>Audits the agent. Asks: <em>"Which runs had write access, what did they change, and who triggered them?"</em> Needs an audit trail of triggers, actors, and outputs per run.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="data">
+  <span class="eyebrow">03 · Data sources</span>
+  <h2>What can actually be measured (verified)</h2>
+  <p>This design is grounded in what the platforms expose today. The single most important finding: <strong>the action itself exposes no per-run cost or token output</strong> — its outputs are only <code>conclusion</code>, <code>session_id</code>, and an optional user-schema <code>structured_output</code>. So per-run economics must come from telemetry or Anthropic's Admin APIs, and joining those to GitHub runs is the core technical work of this product.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Source</th><th>What it gives</th><th>Granularity</th><th>Constraint</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>GitHub App webhooks</td>
+          <td><code>workflow_run</code>, <code>workflow_job</code>, <code>pull_request</code>, <code>pull_request_review</code>, <code>issue_comment</code>, <code>installation_repositories</code>, <code>push</code> — real-time run status, durations, Claude-bot comments/reviews</td>
+          <td>Per event, real time</td>
+          <td>No cost data; needs app installed org-wide</td>
+        </tr>
+        <tr>
+          <td>GitHub REST (backfill)</td>
+          <td>Repo list → workflow files → parse YAML for <code>uses: anthropics/claude-code-action</code>; historical runs</td>
+          <td>Batch scan</td>
+          <td>No API filter for "workflows using action X" — must fetch &amp; parse YAML. 5k req/hr; needs ETag caching</td>
+        </tr>
+        <tr>
+          <td>Claude Code OTel</td>
+          <td><code>claude_code.token.usage</code>, <code>claude_code.cost.usage</code>, session/tool metrics via <code>CLAUDE_CODE_ENABLE_TELEMETRY=1</code> + OTLP env vars</td>
+          <td>Per run, near-real-time (60s batches)</td>
+          <td>Opt-in: each workflow must set env vars; needs a reachable OTLP endpoint</td>
+        </tr>
+        <tr>
+          <td>Claude Code Analytics API</td>
+          <td><code>/v1/organizations/usage_report/claude_code</code> — sessions, LoC, commits, PRs created, per-model tokens + estimated cost, attributed to <code>api_actor</code> (API key name)</td>
+          <td>Per actor per day (~1h freshness)</td>
+          <td>Requires Admin API key; daily aggregates, not per run</td>
+        </tr>
+        <tr>
+          <td>Usage &amp; Cost Admin API</td>
+          <td><code>usage_report/messages</code> (group by api_key/model, 1m–1d buckets) and <code>cost_report</code> (billing-accurate USD, daily)</td>
+          <td>1 min – 1 day buckets</td>
+          <td>Admin API key; no repo/run context — reconciliation only</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <p><strong>Auth-mode gap:</strong> when the action authenticates with a Claude subscription OAuth token instead of an API key, there is no Admin-API cost trail — usage is covered by the subscription. For those installs Scuttledeck shows token counts from OTel and labels cost "included in subscription." This must be a first-class state in the UI, not an error.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="arch">
+  <span class="eyebrow">04 · Architecture</span>
+  <h2>Three ingestion planes, one join, one dashboard</h2>
+
+  <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph GH["GitHub org"]
+    WH["Webhooks<br/>workflow_run · PR events<br/>issue_comment · installs"]
+    REST["REST API<br/>repo + workflow YAML scan"]
+  end
+  subgraph CI["CI runner (per workflow)"]
+    ACT["claude-code-action"]
+    OT["Claude Code OTel<br/>tokens · cost · session"]
+    ACT -.-> OT
+  end
+  subgraph AN["Anthropic Admin APIs"]
+    CCA["Claude Code Analytics<br/>usage + cost reports"]
+  end
+
+  subgraph CB["Scuttledeck (self-hosted)"]
+    ING["Ingest service<br/>webhook receiver (HMAC)<br/>OTLP/HTTP endpoint (token auth)"]
+    POLL["Pollers<br/>GitHub backfill · Anthropic daily"]
+    Q["Job queue"]
+    WK["Workers<br/>normalize · correlate<br/>run ⇄ session ⇄ PR"]
+    PG[("Postgres<br/>entities + metrics")]
+    API["API + auth"]
+    AL["Alert engine<br/>budgets · failure spikes"]
+  end
+
+  UI["Web dashboard"]
+  SL["Slack / email"]
+
+  WH --> ING
+  OT -- "OTLP export" --> ING
+  REST --> POLL
+  CCA --> POLL
+  ING --> Q
+  POLL --> Q
+  Q --> WK --> PG
+  PG --> API --> UI
+  PG --> AL --> SL
+</pre>
+  </div>
+
+  <h3>Components</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Component</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td>GitHub App</td><td>Installed org-wide with least privilege: <code>actions:read</code>, <code>contents:read</code>, <code>pull_requests:read</code>, <code>metadata:read</code>. Delivers webhooks; its installation token powers the backfill scanner. One app, many installations → multi-org from day one.</td></tr>
+        <tr><td>Ingest service</td><td>Two public endpoints. <code>/webhooks/github</code>: verifies HMAC signature, enqueues raw event, returns 200 fast. <code>/v1/otlp/metrics</code>: accepts OTLP/HTTP from CI runners, authenticated by per-install ingest tokens; extracts token/cost counters with their resource attributes.</td></tr>
+        <tr><td>Discovery scanner</td><td>Nightly (and on <code>push</code> to workflow files): list repos → list workflows → fetch YAML via contents API with ETags → parse for <code>claude-code-action</code> refs, triggers, model config. Produces the fleet inventory and flags version drift (e.g. repos pinned to an old action version).</td></tr>
+        <tr><td>Correlator</td><td>The heart of the product: joins an OTel session to its GitHub run via resource attributes (run id injected at workflow level — see §05), and joins runs to PRs via the <code>workflow_run</code> payload and Claude-bot comment/review events. Falls back to time+repo heuristics when attributes are missing, marked lower-confidence.</td></tr>
+        <tr><td>Anthropic poller</td><td>Hourly pull of Claude Code Analytics (<code>api_actor</code>-attributed sessions, tokens, estimated cost) and daily pull of <code>cost_report</code> for billing-accurate reconciliation.</td></tr>
+        <tr><td>Alert engine</td><td>Rules evaluated on ingest and on schedule: monthly budget per org/repo, cost-per-run anomaly (&gt;N× trailing median), failure-rate spike, "action inactive in repo X for 14 days." Notifies Slack webhook / email.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="cost">
+  <span class="eyebrow">05 · Cost attribution</span>
+  <h2>Three tiers, graceful degradation</h2>
+  <p>Cost answers get better the more the customer opts in. Each tier works without the next; the dashboard labels the provenance of every dollar figure.</p>
+
+  <div class="card">
+    <h3>Tier 1 — zero workflow changes <span class="pill ok">MVP</span></h3>
+    <p>Customer supplies an Anthropic <strong>Admin API key</strong>. The poller pulls the Claude Code Analytics API daily: per-API-key sessions, tokens, estimated cost, plus commits/PRs counted by Anthropic. If teams follow the recommended convention of <strong>one API key per repo or team</strong> (e.g. <code>gh-action-payments-api</code>), this alone yields per-repo cost with no CI changes. Accuracy: daily, estimated.</p>
+  </div>
+  <div class="card">
+    <h3>Tier 2 — per-run precision via OTel <span class="pill accent">FLAGSHIP</span></h3>
+    <p>Ship a one-line companion step, <code>scuttledeck/setup@v1</code>, dropped in before the action:</p>
+    <pre class="code"><code>- uses: scuttledeck/setup@v1
+  with:
+    endpoint: https://scuttledeck.internal.acme.dev
+    token: ${{ secrets.SCUTTLEDECK_TOKEN }}
+- uses: anthropics/claude-code-action@v1
+  ...</code></pre>
+    <p>The setup step exports <code>CLAUDE_CODE_ENABLE_TELEMETRY=1</code>, <code>OTEL_METRICS_EXPORTER=otlp</code>, the OTLP endpoint + auth header, and — critically — <code>OTEL_RESOURCE_ATTRIBUTES</code> carrying <code>github.repo</code>, <code>github.run_id</code>, <code>github.workflow</code>, and PR number. Every token/cost counter now lands pre-joined to its exact run. Accuracy: per run, ~60s latency.</p>
+  </div>
+  <div class="card">
+    <h3>Tier 3 — billing truth</h3>
+    <p>Daily <code>cost_report</code> reconciliation: Tier 1/2 numbers are estimates; the cost report is what Anthropic bills. Scuttledeck scales estimated figures to the reconciled total and shows drift ("estimates within 3% of invoice this month"). Subscription-OAuth installs skip cost and report tokens only.</p>
+  </div>
+
+  <p style="margin-top:18px;">Unit economics fall out of the join: <strong>cost per PR review</strong> = session cost of runs attached to that PR; <strong>cost per merged agent PR</strong>, <strong>cost per repo per week</strong>, <strong>tokens per turn</strong> follow the same path.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="model">
+  <span class="eyebrow">06 · Data model</span>
+  <h2>Entities</h2>
+  <p>Postgres, normalized entities plus an append-only metrics table. At fleet scale (thousands of runs/day) this stays comfortably in Postgres; a ClickHouse swap for <code>metric_point</code> is a later optimization, not an MVP need.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Table</th><th>Key fields</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>installation</code></td><td>github_install_id, org, admin_api_key_ref, ingest_token_hash</td><td>One per GitHub org; secrets stored as encrypted refs</td></tr>
+        <tr><td><code>repo</code></td><td>installation_id, full_name, has_action, first_seen, archived</td><td>Fleet inventory row</td></tr>
+        <tr><td><code>workflow</code></td><td>repo_id, path, name, action_ref, action_version, triggers[], model_config</td><td>From YAML parse; powers drift detection</td></tr>
+        <tr><td><code>run</code></td><td>workflow_id, gh_run_id, trigger_event, actor, pr_number, status, conclusion, started_at, duration_s</td><td>From <code>workflow_run</code> events + backfill</td></tr>
+        <tr><td><code>agent_session</code></td><td>run_id (nullable), session_id, model, tok_in, tok_out, tok_cache_read, tok_cache_create, cost_usd, source, confidence</td><td><code>source ∈ {otel, analytics_api}</code>; run_id null until correlated</td></tr>
+        <tr><td><code>pr_interaction</code></td><td>repo_id, pr_number, kind, author, run_id, ts</td><td><code>kind ∈ {review, comment, commit, pr_opened}</code> by the Claude bot</td></tr>
+        <tr><td><code>cost_daily</code></td><td>date, api_key_name, model, tokens*, est_cost_usd, billed_cost_usd</td><td>Analytics + cost_report reconciliation</td></tr>
+        <tr><td><code>alert_rule / alert_event</code></td><td>scope, kind, threshold / fired_at, payload</td><td>Budgets, anomaly, failure-rate, staleness</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="ui">
+  <span class="eyebrow">07 · Dashboard</span>
+  <h2>PR-centric, cost-aware, scannable</h2>
+  <p>Five views. The overview leads with the four numbers every persona checks daily; everything drills down from there.</p>
+
+  <figure>
+    <div class="mock" role="img" aria-label="Wireframe of the Scuttledeck fleet overview dashboard">
+      <div class="mock-top">
+        <span class="logo">⬡ scuttledeck</span>
+        <div class="tabs">
+          <span class="on">FLEET</span><span>RUNS</span><span>PULL REQUESTS</span><span>COST</span><span>ALERTS</span>
+        </div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="k-label">Repos active</div><div class="k-val">47<span style="font-size:.8rem;color:var(--ink-faint)">/213</span></div><div class="k-delta up">▲ 5 this week</div></div>
+        <div class="kpi"><div class="k-label">Runs · 7d</div><div class="k-val">1,284</div><div class="k-delta up">▲ 12%</div></div>
+        <div class="kpi"><div class="k-label">Success rate</div><div class="k-val">94.2%</div><div class="k-delta down">▼ 1.8 pts</div></div>
+        <div class="kpi"><div class="k-label">PRs reviewed · 7d</div><div class="k-val">312</div><div class="k-delta up">▲ 9%</div></div>
+        <div class="kpi"><div class="k-label">Spend · MTD</div><div class="k-val">$1,847</div><div class="k-delta flat">budget $3,000</div></div>
+      </div>
+      <div class="mock-body">
+        <div class="panel">
+          <h4>Live runs</h4>
+          <div class="runrow"><span class="dot warn"></span><span class="r-repo">acme/payments-api</span><span class="r-kind">@claude fix flaky test · PR #482</span><span class="r-cost">running · 3m</span></div>
+          <div class="runrow"><span class="dot ok"></span><span class="r-repo">acme/web-app</span><span class="r-kind">auto review · PR #1291</span><span class="r-cost">$0.84 · 4m</span></div>
+          <div class="runrow"><span class="dot ok"></span><span class="r-repo">acme/infra</span><span class="r-kind">@claude update deps · issue #77</span><span class="r-cost">$2.31 · 11m</span></div>
+          <div class="runrow"><span class="dot crit"></span><span class="r-repo">acme/ml-pipeline</span><span class="r-kind">auto review · PR #203</span><span class="r-cost">failed · 2m</span></div>
+          <div class="runrow"><span class="dot ok"></span><span class="r-repo">acme/mobile</span><span class="r-kind">@claude triage · issue #518</span><span class="r-cost">$0.42 · 2m</span></div>
+        </div>
+        <div class="panel">
+          <h4>Spend by repo · MTD</h4>
+          <div class="bar"><span class="b-name">payments-api</span><div class="b-track"><div class="b-fill" style="width:86%"></div></div><span class="b-val">$412</span></div>
+          <div class="bar"><span class="b-name">web-app</span><div class="b-track"><div class="b-fill" style="width:64%"></div></div><span class="b-val">$308</span></div>
+          <div class="bar"><span class="b-name">ml-pipeline</span><div class="b-track"><div class="b-fill" style="width:47%"></div></div><span class="b-val">$226</span></div>
+          <div class="bar"><span class="b-name">infra</span><div class="b-track"><div class="b-fill" style="width:31%"></div></div><span class="b-val">$149</span></div>
+          <div class="bar"><span class="b-name">37 more…</span><div class="b-track"><div class="b-fill" style="width:22%;opacity:.45"></div></div><span class="b-val">$752</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>FIG 1 · Fleet overview wireframe — KPI strip, live run feed with per-run cost, spend leaderboard.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>View</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td>Fleet</td><td>KPI strip (repos active, runs, success rate, PRs reviewed, spend vs budget), live run feed, spend leaderboard, adoption trend. Repo inventory table with action version + trigger config and drift badges.</td></tr>
+        <tr><td>Runs</td><td>Filterable run explorer (repo, workflow, trigger, conclusion, cost range). Run detail: timeline, trigger context, linked PR, session metrics (tokens by type, turns, model), link out to GitHub logs.</td></tr>
+        <tr><td>Pull requests</td><td>Everything Claude touched: reviewed, commented, authored. Outcomes — merged / closed / still open — and time-to-review. The ROI page for managers.</td></tr>
+        <tr><td>Cost</td><td>Spend by repo / workflow / model / API key over time; unit economics (cost per review, per merged PR); estimate-vs-invoice reconciliation; budget config.</td></tr>
+        <tr><td>Alerts</td><td>Rule builder (budget, anomaly, failure spike, staleness) + delivery config (Slack, email) + firing history.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="security">
+  <span class="eyebrow">08 · Security &amp; privacy</span>
+  <h2>Hold secrets, not prompts</h2>
+  <ul>
+    <li><strong>Least-privilege GitHub App</strong> — read-only scopes only; Scuttledeck never writes to repos. Webhook HMAC verified on every delivery.</li>
+    <li><strong>No prompt or code content stored.</strong> Claude Code's OTel omits prompt/tool content by default; Scuttledeck never sets the opt-in flags and drops any log bodies at ingest. Metadata only: counts, costs, durations, statuses, PR numbers.</li>
+    <li><strong>Secrets</strong> — Admin API key and app private key encrypted at rest (libsodium sealed box), decrypted only in the poller; ingest tokens stored hashed, scoped per installation, revocable.</li>
+    <li><strong>Self-hosted by default</strong> — telemetry stays inside the customer network; the OTLP endpoint needs to be reachable from CI runners only. SSO (OIDC) + role-based read access for the dashboard.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="roadmap">
+  <span class="eyebrow">09 · Roadmap</span>
+  <h2>Four phases to a fleet product</h2>
+  <ol class="phases">
+    <li>
+      <div>
+        <div class="ph-title">Spike — prove the joins <span class="pill warn">~1 wk</span></div>
+        <div class="ph-scope">GitHub App against one test org: webhook ingest, YAML discovery scan, and an OTel export from a real claude-code-action run landing in Postgres with run-id attributes intact. Kills the riskiest assumptions before any UI exists.</div>
+        <div class="ph-exit"><b>EXIT:</b> one run visible end-to-end with its true token cost attached</div>
+      </div>
+    </li>
+    <li>
+      <div>
+        <div class="ph-title">MVP — see the fleet <span class="pill warn">~3–4 wks</span></div>
+        <div class="ph-scope">Fleet + Runs views, discovery scanner, run feed via webhooks, Tier-1 cost (Analytics API poller), Docker Compose deploy, docs. Ship publicly; this alone beats clicking through Actions tabs.</div>
+        <div class="ph-exit"><b>EXIT:</b> a stranger self-hosts it against their org in under 30 minutes</div>
+      </div>
+    </li>
+    <li>
+      <div>
+        <div class="ph-title">Per-run economics <span class="pill warn">~3 wks</span></div>
+        <div class="ph-scope"><code>scuttledeck/setup@v1</code> companion action, OTLP ingest endpoint, correlator, PR view with cost-per-review, cost_report reconciliation.</div>
+        <div class="ph-exit"><b>EXIT:</b> every run shows dollars; every PR shows what Claude's attention cost</div>
+      </div>
+    </li>
+    <li>
+      <div>
+        <div class="ph-title">Operate — alerts &amp; scale <span class="pill warn">ongoing</span></div>
+        <div class="ph-scope">Budget/anomaly/failure alerting to Slack, multi-org, SSO, retention policies. Optional later: hosted SaaS tier (the open-source core stays complete — open-core on hosting, not features).</div>
+        <div class="ph-exit"><b>EXIT:</b> teams get paged by Scuttledeck before FinOps notices the invoice</div>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="stack">
+  <span class="eyebrow">10 · Stack</span>
+  <h2>Boring on purpose</h2>
+  <p>Optimized for OSS contributor accessibility and one-command self-hosting: a single TypeScript monorepo, a single database.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Language</td><td>TypeScript everywhere</td><td>Octokit + OTel JS SDKs are first-class; one language lowers the contribution bar</td></tr>
+        <tr><td>Ingest/API</td><td>Node + Hono</td><td>Lightweight, fast HMAC/webhook handling; OTLP/HTTP JSON+protobuf parsing via official proto defs</td></tr>
+        <tr><td>Queue/workers</td><td>pg-boss</td><td>Queue inside Postgres — no Redis dependency in the default deploy</td></tr>
+        <tr><td>Database</td><td>Postgres 16 + Drizzle</td><td>Entities and metrics in one store; ClickHouse only if metric volume ever demands it</td></tr>
+        <tr><td>Dashboard</td><td>Next.js + Tailwind</td><td>Familiar to the widest contributor pool; server components for data-heavy tables</td></tr>
+        <tr><td>Deploy</td><td>Docker Compose (→ Helm later)</td><td><code>docker compose up</code> is the 30-minute-install promise</td></tr>
+        <tr><td>License</td><td>Apache-2.0</td><td>Maximizes adoption in enterprises where the buyers sit; moat is execution, not license</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="risks">
+  <span class="eyebrow">11 · Risks</span>
+  <h2>Open questions &amp; honest risks</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Anthropic ships this natively</td><td><span class="pill crit">HIGH</span></td><td>Real possibility (Console already has Claude Code analytics). Defenses: self-hosted + GitHub-native context (PR joins) that Console lacks; multi-source cost truth; move fast. Even so, an OSS tool can win the "my data stays inside" segment.</td></tr>
+        <tr><td>OTel→run correlation fragility</td><td><span class="pill warn">MED</span></td><td>Resource attributes injected by the setup action make the join explicit; heuristic fallback is labeled low-confidence. The spike phase exists to de-risk exactly this.</td></tr>
+        <tr><td>Discovery scan rate limits on huge orgs</td><td><span class="pill warn">MED</span></td><td>ETag conditional requests, nightly cadence, push-event triggered rescans of changed workflow files only.</td></tr>
+        <tr><td>API surface churn (action v2, Analytics API changes)</td><td><span class="pill warn">MED</span></td><td>Version-tolerant YAML matcher (<code>claude-code-action@*</code> and forks); poller schemas validated with zod, alert on drift.</td></tr>
+        <tr><td>Subscription-OAuth installs have no cost data</td><td><span class="pill ok">LOW</span></td><td>Designed-in state: tokens shown, cost marked "included in subscription."</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="soft">
+  <p style="color:var(--ink-soft); font-size:.9rem;"><strong>Naming note:</strong> "Scuttledeck" is a working title. Whatever ships must avoid implying Anthropic affiliation — no Anthropic branding, and a clear "community project, not affiliated with Anthropic" line in the README.</p>
+</section>
+
+</div>

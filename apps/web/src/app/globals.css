@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/*
+ * Scuttledeck design tokens — "ship's chart room."
+ * Warm chart-paper ground, deep sea-green ink, teal signal.
+ * Chart palette validated (CVD + contrast) against #fbfaf5:
+ *   categorical: #0a8a6a #4f5bd5 #c05621 #8d3f78
+ *   status:      #178a4c #b8860b #0b6bcb #c62f27  (always icon + label)
+ */
+@theme {
+  --color-ground: #f3f0e7;
+  --color-surface: #fbfaf5;
+  --color-surface-2: #ece7d8;
+  --color-line: #d9d3c0;
+  --color-line-soft: #e7e2d2;
+  --color-ink: #16302b;
+  --color-ink-soft: #51625b;
+  --color-ink-faint: #8a948c;
+
+  --color-rail: #0e211b;
+  --color-rail-2: #16302a;
+  --color-rail-ink: #cbd8d1;
+  --color-rail-faint: #64796f;
+
+  --color-signal: #0a8a6a;
+  --color-signal-deep: #0b6b54;
+  --color-signal-bright: #2fd4a4;
+  --color-signal-wash: rgba(10, 138, 106, 0.09);
+
+  --color-cat-1: #0a8a6a;
+  --color-cat-2: #4f5bd5;
+  --color-cat-3: #c05621;
+  --color-cat-4: #8d3f78;
+
+  --color-good: #178a4c;
+  --color-warn: #b8860b;
+  --color-info: #0b6bcb;
+  --color-crit: #c62f27;
+
+  --font-display: var(--font-bricolage);
+  --font-body: var(--font-instrument);
+  --font-mono: var(--font-spline-mono);
+}
+
+body {
+  background-color: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  /* faint chart-grid, like plotting paper */
+  background-image:
+    linear-gradient(to right, rgba(22, 48, 43, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(22, 48, 43, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+.font-mono-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* nautical hairline: solid rule with a dotted "sounding line" beneath */
+.rule-sounding {
+  border-bottom: 1px solid var(--color-line);
+  position: relative;
+}
+.rule-sounding::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  border-bottom: 1px dotted var(--color-line);
+}
+
+@keyframes blip {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.animate-blip {
+  animation: blip 1.6s ease-in-out infinite;
+}

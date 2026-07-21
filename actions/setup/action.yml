@@ -1,0 +1,50 @@
+name: "Scuttledeck Setup"
+description: >-
+  Enable Claude Code's built-in OpenTelemetry export and tag it with this
+  run's GitHub context, so your Scuttledeck instance can attribute tokens and
+  cost to the exact workflow run and PR. Add this step once, directly before
+  anthropics/claude-code-action.
+author: scuttledeck
+branding:
+  icon: activity
+  color: green
+
+inputs:
+  endpoint:
+    description: "Base URL of your Scuttledeck ingest service (e.g. https://scuttledeck.internal.example.dev)"
+    required: true
+  token:
+    description: "Scuttledeck ingest token — store it as an Actions secret"
+    required: true
+  export-interval-ms:
+    description: "OTel metric export interval. Short CI jobs should keep this low so the final batch flushes before the runner exits."
+    required: false
+    default: "10000"
+
+runs:
+  using: composite
+  steps:
+    - name: Configure Claude Code telemetry
+      shell: bash
+      env:
+        SCUTTLEDECK_ENDPOINT: ${{ inputs.endpoint }}
+        SCUTTLEDECK_TOKEN: ${{ inputs.token }}
+        EXPORT_INTERVAL: ${{ inputs['export-interval-ms'] }}
+        PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || '' }}
+      run: |
+        set -euo pipefail
+        echo "::add-mask::${SCUTTLEDECK_TOKEN}"
+
+        endpoint="${SCUTTLEDECK_ENDPOINT%/}"
+
+        {
+          echo "CLAUDE_CODE_ENABLE_TELEMETRY=1"
+          echo "OTEL_METRICS_EXPORTER=otlp"
+          echo "OTEL_EXPORTER_OTLP_PROTOCOL=http/json"
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=${endpoint}"
+          echo "OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer ${SCUTTLEDECK_TOKEN}"
+          echo "OTEL_METRIC_EXPORT_INTERVAL=${EXPORT_INTERVAL}"
+          echo "OTEL_RESOURCE_ATTRIBUTES=github.repo=${GITHUB_REPOSITORY},github.run_id=${GITHUB_RUN_ID},github.run_attempt=${GITHUB_RUN_ATTEMPT},github.workflow=${GITHUB_WORKFLOW_REF},github.event=${GITHUB_EVENT_NAME},github.pr_number=${PR_NUMBER}"
+        } >> "$GITHUB_ENV"
+
+        echo "Scuttledeck telemetry enabled → ${endpoint} (run ${GITHUB_RUN_ID})"

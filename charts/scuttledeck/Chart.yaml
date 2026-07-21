@@ -1,0 +1,16 @@
+apiVersion: v2
+name: scuttledeck
+description: >-
+  Self-hosted fleet monitoring for the Claude Code GitHub Action — live runs,
+  PRs touched, and true per-run token cost for a whole GitHub org.
+type: application
+version: 0.1.0
+appVersion: "0.0.1"
+home: https://github.com/scuttledeck/scuttledeck
+sources:
+  - https://github.com/scuttledeck/scuttledeck
+keywords:
+  - claude
+  - github-actions
+  - observability
+  - cost

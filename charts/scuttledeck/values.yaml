@@ -1,0 +1,51 @@
+# -- GitHub org this installation watches (repo owner for single-user installs)
+github:
+  org: ""
+  # -- Webhook HMAC secret. Leave empty to auto-generate once (persisted across upgrades).
+  webhookSecret: ""
+
+ingest:
+  # -- Ingest bearer token CI runners send. Leave empty to auto-generate once.
+  token: ""
+  replicas: 1
+  image:
+    repository: ghcr.io/scuttledeck/scuttledeck-ingest
+    tag: ""            # defaults to chart appVersion
+    pullPolicy: IfNotPresent
+  resources: {}
+
+web:
+  replicas: 1
+  image:
+    repository: ghcr.io/scuttledeck/scuttledeck-web
+    tag: ""            # defaults to chart appVersion
+    pullPolicy: IfNotPresent
+  resources: {}
+
+postgres:
+  # -- Run a bundled Postgres 16 StatefulSet. Disable to bring your own database.
+  enabled: true
+  image: postgres:16-alpine
+  user: scuttledeck
+  database: scuttledeck
+  # -- Leave empty to auto-generate once (persisted across upgrades).
+  password: ""
+  storage: 5Gi
+  storageClassName: ""
+  resources: {}
+
+# -- Full connection string for an external database (used when postgres.enabled=false)
+externalDatabaseUrl: ""
+
+ingress:
+  enabled: false
+  className: ""
+  # -- Public host. GitHub webhooks + CI telemetry are routed to the ingest
+  # service, everything else to the dashboard.
+  host: scuttledeck.example.com
+  annotations: {}
+  tls: []
+  # - secretName: scuttledeck-tls
+  #   hosts: [scuttledeck.example.com]
+
+imagePullSecrets: []
