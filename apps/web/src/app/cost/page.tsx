@@ -9,7 +9,7 @@ function LabeledBars({ rows }: { rows: LabeledSpend[] }) {
   return (
     <div className="space-y-2.5">
       {rows.map((r) => (
-        <div key={r.label} className="grid grid-cols-[9rem_1fr_5.5rem] items-center gap-3">
+        <div key={r.label} className="grid grid-cols-[minmax(9rem,14rem)_1fr_5.5rem] items-center gap-3">
           <span className="font-mono-data truncate text-[0.75rem] text-ink-soft" title={r.label}>
             {r.label}
           </span>
@@ -50,8 +50,16 @@ export default async function CostPage() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="spend · MTD" value={usd(kpis.mtd)} sub={`prev month ${usd(kpis.prevMonth)}`} />
-        <StatTile label="avg cost / run" value={usd(kpis.avgPerRun, 4)} sub="correlated runs" />
-        <StatTile label="avg cost / review" value={usd(kpis.avgPerReview, 4)} sub="PR reviews" />
+        <StatTile
+          label="avg cost / run"
+          value={kpis.avgPerRun > 0 ? usd(kpis.avgPerRun) : "—"}
+          sub={kpis.avgPerRun > 0 ? "correlated runs" : "no correlated runs yet"}
+        />
+        <StatTile
+          label="avg cost / review"
+          value={kpis.avgPerReview > 0 ? usd(kpis.avgPerReview) : "—"}
+          sub={kpis.avgPerReview > 0 ? "PR reviews" : "no reviews yet"}
+        />
         <StatTile
           label="provenance"
           value="OTel"

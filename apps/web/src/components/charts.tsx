@@ -132,7 +132,7 @@ export function SpendBars({ rows }: { rows: RepoSpend[] }) {
         const pct = Math.max(1.5, (r.costUsd / max) * 100);
         const name = r.repoFullName.split("/")[1] ?? r.repoFullName;
         return (
-          <div key={r.repoFullName} className="grid grid-cols-[9rem_1fr_5.5rem] items-center gap-3">
+          <div key={r.repoFullName} className="grid grid-cols-[minmax(9rem,14rem)_1fr_5.5rem] items-center gap-3">
             <span className="font-mono-data truncate text-[0.75rem] text-ink-soft" title={r.repoFullName}>
               {name}
             </span>

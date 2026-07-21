@@ -1,7 +1,12 @@
-export function usd(value: number | string | null | undefined, digits = 2): string {
+/**
+ * One precision rule everywhere: 2 decimals at or above a cent (and for
+ * zero), 4 decimals below a cent — never fake precision.
+ */
+export function usd(value: number | string | null | undefined): string {
   if (value === null || value === undefined) return "—";
   const n = typeof value === "string" ? Number(value) : value;
   if (!Number.isFinite(n)) return "—";
+  const digits = n !== 0 && Math.abs(n) < 0.01 ? 4 : 2;
   return n.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",

@@ -79,11 +79,12 @@ export function Rail({
       </nav>
 
       <div className={`pb-5 ${collapsed ? "px-2" : "px-5"}`}>
-        <div className={`mb-3 flex gap-2 ${collapsed ? "flex-col items-center" : ""}`}>
+        {/* view controls — grouped and overflow-safe */}
+        <div className={`flex gap-1.5 ${collapsed ? "flex-col items-center" : ""}`}>
           <button
             onClick={toggleTheme}
             title={theme === "dark" ? "Switch to chart room (light)" : "Switch to night watch (dark)"}
-            className="font-mono-data inline-flex items-center gap-1.5 rounded-md border border-rail-2 px-2.5 py-1 text-[0.68rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
+            className="font-mono-data inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-rail-2 px-2 py-1 text-[0.66rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
           >
             {theme === "dark" ? "☀" : "☾"}
             {!collapsed && <span>{theme === "dark" ? "day" : "night"}</span>}
@@ -91,23 +92,26 @@ export function Rail({
           <button
             onClick={toggleCollapsed}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="font-mono-data inline-flex items-center gap-1.5 rounded-md border border-rail-2 px-2.5 py-1 text-[0.68rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
+            className="font-mono-data inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-rail-2 px-2 py-1 text-[0.66rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
           >
             {collapsed ? "⟩" : "⟨"}
             {!collapsed && <span>collapse</span>}
           </button>
-          {authEnabled && (
+        </div>
+        {/* sign-out lives apart from the view controls so it can't be fat-fingered */}
+        {authEnabled && (
+          <div className={`mt-3 border-t border-rail-2 pt-3 ${collapsed ? "text-center" : ""}`}>
             <a
               href="/api/logout"
               title="Sign out"
-              className="font-mono-data inline-flex items-center gap-1.5 rounded-md border border-rail-2 px-2.5 py-1 text-[0.68rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
+              className="font-mono-data inline-flex items-center gap-1 whitespace-nowrap text-[0.66rem] text-rail-faint underline decoration-dotted underline-offset-4 hover:text-signal-bright"
             >
               ⎋{!collapsed && <span>sign out</span>}
             </a>
-          )}
-        </div>
+          </div>
+        )}
         {!collapsed && (
-          <p className="font-mono-data text-[0.62rem] leading-relaxed text-rail-faint">
+          <p className="font-mono-data mt-3 text-[0.62rem] leading-relaxed text-rail-faint">
             v0.1.0-rc · community project —<br />
             not affiliated with Anthropic
           </p>

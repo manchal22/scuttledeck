@@ -22,10 +22,15 @@ export async function fleetKpis(): Promise<FleetKpis> {
   const d14 = new Date(now - 14 * DAY_MS);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
+  // "On watch" = discovery found the action OR telemetry proves it runs
+  // (covers deploys where the discovery scanner isn't enabled yet).
   const [repoCounts] = await db()
     .select({
       total: sql<number>`count(*)::int`,
-      withAction: sql<number>`count(*) filter (where ${repo.hasAction})::int`,
+      withAction: sql<number>`count(*) filter (where ${repo.hasAction} or exists (
+        select 1 from ${run} r join ${agentSession} s on s.run_id = r.id
+        where r.repo_id = ${repo.id}
+      ))::int`,
     })
     .from(repo);
 
@@ -139,9 +144,16 @@ export interface RunFilters {
   status?: string;
   repo?: string;
   event?: string;
+  since?: string; // '24h' | '7d' | '30d'
 }
 
-export async function runsList(filters: RunFilters = {}, limit = 50): Promise<RunRow[]> {
+const SINCE_MS: Record<string, number> = {
+  "24h": DAY_MS,
+  "7d": 7 * DAY_MS,
+  "30d": 30 * DAY_MS,
+};
+
+function runConditions(filters: RunFilters) {
   const conditions = [];
   if (filters.repo) conditions.push(eq(repo.fullName, filters.repo));
   if (filters.event) conditions.push(eq(run.triggerEvent, filters.event));
@@ -150,6 +162,24 @@ export async function runsList(filters: RunFilters = {}, limit = 50): Promise<Ru
   } else if (filters.status === "in_progress" || filters.status === "queued") {
     conditions.push(eq(run.status, filters.status));
   }
+  if (filters.since && SINCE_MS[filters.since]) {
+    conditions.push(gte(run.runStartedAt, new Date(Date.now() - SINCE_MS[filters.since]!)));
+  }
+  return conditions;
+}
+
+export async function runsCount(filters: RunFilters = {}): Promise<number> {
+  const conditions = runConditions(filters);
+  const [row] = await db()
+    .select({ n: sql<number>`count(*)::int` })
+    .from(run)
+    .leftJoin(repo, eq(run.repoId, repo.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+  return row?.n ?? 0;
+}
+
+export async function runsList(filters: RunFilters = {}, limit = 50, offset = 0): Promise<RunRow[]> {
+  const conditions = runConditions(filters);
 
   const rows = await db()
     .select({
@@ -177,7 +207,8 @@ export async function runsList(filters: RunFilters = {}, limit = 50): Promise<Ru
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .groupBy(run.id, repo.fullName)
     .orderBy(desc(sql`coalesce(${run.runStartedAt}, ${run.createdAt})`))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
   return rows;
 }
 
