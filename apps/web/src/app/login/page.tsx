@@ -1,4 +1,5 @@
 import { LogoMark } from "@/components/logo";
+import { LoginHelp } from "./help";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export default async function LoginPage({
             />
           </label>
           {params.error && (
-            <p className="mt-2 text-[0.78rem]" style={{ color: "#c62f27" }}>
+            <p className="mt-2 text-[0.78rem]" style={{ color: "var(--sd-crit)" }}>
               ✕ Wrong password — check the deployment secret.
             </p>
           )}
@@ -49,9 +50,7 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="font-mono-data mt-4 text-center text-[0.62rem] leading-relaxed text-rail-faint">
-          kubectl get secret scuttledeck-secrets -o jsonpath=&#39;&#123;.data.DASHBOARD_PASSWORD&#125;&#39; | base64 -d
-        </p>
+        <LoginHelp />
       </div>
     </div>
   );

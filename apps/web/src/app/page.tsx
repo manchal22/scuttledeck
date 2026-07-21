@@ -75,8 +75,8 @@ export default async function FleetPage() {
         <Panel title="Run volume" meta="14 days" className="xl:col-span-3">
           <RunsBarChart buckets={days} />
           <p className="font-mono-data mt-2 text-[0.65rem] text-ink-faint">
-            <span style={{ color: "#0a8a6a" }}>■</span> succeeded&ensp;
-            <span style={{ color: "#c62f27" }}>■</span> failed / other
+            <span style={{ color: "var(--sd-signal)" }}>■</span> succeeded&ensp;
+            <span style={{ color: "var(--sd-crit)" }}>■</span> failed / other
           </p>
         </Panel>
 

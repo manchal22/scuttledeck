@@ -53,6 +53,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "scuttledeck.secretName" . }}
                   key: DASHBOARD_PASSWORD
+            - name: SESSION_TTL_HOURS
+              value: {{ .Values.web.sessionTtlHours | quote }}
           ports:
             - name: http
               containerPort: 3000

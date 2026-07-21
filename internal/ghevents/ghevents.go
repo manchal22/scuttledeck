@@ -208,6 +208,21 @@ func ProcessWorkflowRun(ctx context.Context, pool *pgxpool.Pool, evt *WorkflowRu
 		return 0, err
 	}
 
+	// Record a review interaction when a discovered Claude workflow completed
+	// against a PR — the substrate for cost-per-review and merge-rate metrics.
+	if prNumber != nil && deref(evt.Action, "") == "completed" && wr.Path != nil {
+		var isClaudeWorkflow bool
+		if err := pool.QueryRow(ctx,
+			`select exists (select 1 from workflow where repo_id = $1 and path = $2)`,
+			repoID, *wr.Path).Scan(&isClaudeWorkflow); err == nil && isClaudeWorkflow {
+			_, _ = pool.Exec(ctx, `
+				insert into pr_interaction (repo_id, pr_number, kind, author, run_id, occurred_at)
+				values ($1, $2, 'review', $3, $4, coalesce($5, now()))
+				on conflict (run_id, kind) where run_id is not null do nothing`,
+				repoID, prNumber, nullIfEmpty(actorLogin), runID, outCompleted)
+		}
+	}
+
 	return runID, correlate.CorrelateRunArrival(ctx, pool, correlate.RunArrival{
 		ID:           runID,
 		GhRunID:      *wr.ID,

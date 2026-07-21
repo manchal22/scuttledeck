@@ -122,6 +122,11 @@ for testing, see the README's local quick start.)
 | `github.webhookSecret` | auto-generated | Webhook HMAC secret |
 | `ingest.token` | auto-generated | Bearer token CI runners send |
 | `web.password` | auto-generated | Dashboard login password (printed by helm NOTES) |
+| `web.sessionTtlHours` | `168` | Dashboard session lifetime |
+| `github.token` | — | Read-only GitHub token: enables the discovery scanner (hourly + on workflow-file pushes) |
+| `anthropic.adminKey` | — | Admin API key: enables the Analytics + cost-report pollers |
+| `slack.webhookUrl` | — | Incoming webhook for alert notifications |
+| `retentionDays` | `30` | Raw webhook delivery retention |
 | `ingest.service.type` / `web.service.type` | `ClusterIP` | `LoadBalancer` for a direct address without an ingress controller |
 | `ingest.image.repository` | `ghcr.io/scuttledeck/scuttledeck-ingest` | |
 | `web.image.repository` | `ghcr.io/scuttledeck/scuttledeck-web` | |

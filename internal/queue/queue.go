@@ -134,15 +134,27 @@ func (w *Worker) runOne(ctx context.Context, queueName string) (bool, error) {
 	return true, tx.Commit(ctx)
 }
 
+// HandlerOptions carries optional integrations for event handlers.
+type HandlerOptions struct {
+	// OnWorkflowFilesChanged fires when a push touches .github/workflows —
+	// the poller uses it for just-in-time discovery rescans.
+	OnWorkflowFilesChanged func(repoFullName string)
+}
+
 // RegisterDefaultHandlers wires the two ingest queues.
-func RegisterDefaultHandlers(w *Worker, pool *pgxpool.Pool) {
+func RegisterDefaultHandlers(w *Worker, pool *pgxpool.Pool, opts ...HandlerOptions) {
+	var opt HandlerOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 	w.Handle(QueueGithubEvent, func(ctx context.Context, payload json.RawMessage) error {
 		var job GithubEventJob
 		if err := json.Unmarshal(payload, &job); err != nil {
 			log.Printf("[github] undecodable job (dropping): %v", err)
 			return nil
 		}
-		if job.Event == "workflow_run" {
+		switch job.Event {
+		case "workflow_run":
 			evt, err := ghevents.ParseWorkflowRunEvent(job.Payload)
 			if err != nil {
 				// Schema drift is an alert, not a crash: raw delivery is kept.
@@ -152,8 +164,24 @@ func RegisterDefaultHandlers(w *Worker, pool *pgxpool.Pool) {
 			if _, err := ghevents.ProcessWorkflowRun(ctx, pool, evt); err != nil {
 				return err
 			}
+		case "pull_request":
+			evt, err := ghevents.ParsePullRequestEvent(job.Payload)
+			if err != nil {
+				log.Printf("[github] pull_request failed validation (delivery %s): %v", job.DeliveryID, err)
+				return nil
+			}
+			if err := ghevents.ProcessPullRequest(ctx, pool, evt); err != nil {
+				return err
+			}
+		case "push":
+			var evt ghevents.PushEvent
+			if err := json.Unmarshal(job.Payload, &evt); err == nil &&
+				evt.TouchesWorkflows() && opt.OnWorkflowFilesChanged != nil &&
+				evt.Repository != nil && evt.Repository.FullName != nil {
+				opt.OnWorkflowFilesChanged(*evt.Repository.FullName)
+			}
 		}
-		// Other events land raw in webhook_delivery; handlers arrive in P1/P2.
+		// Remaining events land raw in webhook_delivery for later phases.
 		if job.DeliveryID != "" {
 			_, err := pool.Exec(ctx,
 				`update webhook_delivery set processed_at = now() where delivery_id = $1`, job.DeliveryID)

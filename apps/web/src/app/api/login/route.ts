@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60,
+    maxAge: Number(process.env.SESSION_TTL_HOURS ?? 168) * 60 * 60,
     // secure only when actually served over https, so http test deploys work
     secure: req.nextUrl.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https",
   });

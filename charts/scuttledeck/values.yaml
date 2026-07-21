@@ -3,6 +3,19 @@ github:
   org: ""
   # -- Webhook HMAC secret. Leave empty to auto-generate once (persisted across upgrades).
   webhookSecret: ""
+  # -- GitHub token for the discovery scanner (read-only). Empty disables discovery.
+  token: ""
+
+anthropic:
+  # -- Admin API key (sk-ant-admin…) enabling the Analytics + cost-report pollers.
+  adminKey: ""
+
+slack:
+  # -- Incoming-webhook URL for alert notifications.
+  webhookUrl: ""
+
+# -- Days of raw webhook deliveries to keep (0 disables the sweep).
+retentionDays: 30
 
 ingest:
   # -- Ingest bearer token CI runners send. Leave empty to auto-generate once.
@@ -22,6 +35,8 @@ web:
   # -- Dashboard login password. Leave empty to auto-generate once
   # (printed by helm install/upgrade NOTES, persisted across upgrades).
   password: ""
+  # -- Dashboard session lifetime in hours.
+  sessionTtlHours: 168
   replicas: 1
   service:
     type: ClusterIP
