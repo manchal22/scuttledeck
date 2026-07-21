@@ -1,32 +1,41 @@
+{{- $creds := include "scuttledeck.creds" . | fromJson }}
 Scuttledeck is deploying. The watch begins.
 
-1. Retrieve your generated credentials:
+1. Dashboard login password:
+
+     {{ get $creds "dashboardPassword" }}
+
+   (retrieve again anytime:
+     kubectl get secret {{ include "scuttledeck.secretName" . }} -n {{ .Release.Namespace }} \
+       -o jsonpath='{.data.DASHBOARD_PASSWORD}' | base64 -d)
+
+2. Wire GitHub with the other generated credentials:
 
    WEBHOOK SECRET (for the GitHub App / webhook config):
      kubectl get secret {{ include "scuttledeck.secretName" . }} -n {{ .Release.Namespace }} \
        -o jsonpath='{.data.GITHUB_WEBHOOK_SECRET}' | base64 -d; echo
 
-   INGEST TOKEN (for the SCUTTLEDECK_TOKEN repo secret):
+   INGEST TOKEN (for the SCUTTLEDECK_TOKEN repo/org secret):
      kubectl get secret {{ include "scuttledeck.secretName" . }} -n {{ .Release.Namespace }} \
        -o jsonpath='{.data.INGEST_TOKEN}' | base64 -d; echo
 
 {{- if .Values.ingress.enabled }}
 
-2. Your endpoints (via ingress {{ .Values.ingress.host }}):
+3. Your endpoints (via ingress {{ .Values.ingress.host }}):
      dashboard : https://{{ .Values.ingress.host }}/
      webhooks  : https://{{ .Values.ingress.host }}/webhooks/github
      telemetry : https://{{ .Values.ingress.host }}   (scuttledeck/setup `endpoint` input)
 {{- else }}
 
-2. No ingress enabled — for a quick look, port-forward:
+3. Endpoints: check `kubectl get svc -n {{ .Release.Namespace }}`.
+   With service type LoadBalancer, use the EXTERNAL-IP
+   (ingest :8787 for webhooks + telemetry, web :3000 for the dashboard).
+   With ClusterIP, port-forward for a quick look:
      kubectl port-forward svc/{{ include "scuttledeck.fullname" . }}-web 3000:3000 -n {{ .Release.Namespace }}
-     kubectl port-forward svc/{{ include "scuttledeck.fullname" . }}-ingest 8787:8787 -n {{ .Release.Namespace }}
-
-   GitHub webhooks and CI telemetry need a public URL — enable ingress:
-     --set ingress.enabled=true --set ingress.host=scuttledeck.your.domain
 {{- end }}
 
-3. In each repo workflow, add before anthropics/claude-code-action:
+4. In each repo workflow (or your one reusable workflow), add before
+   anthropics/claude-code-action:
      - uses: scuttledeck/setup@v1
        with:
          endpoint: <your public URL>

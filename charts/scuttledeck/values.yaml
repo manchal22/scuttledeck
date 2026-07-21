@@ -19,6 +19,9 @@ ingest:
   resources: {}
 
 web:
+  # -- Dashboard login password. Leave empty to auto-generate once
+  # (printed by helm install/upgrade NOTES, persisted across upgrades).
+  password: ""
   replicas: 1
   service:
     type: ClusterIP

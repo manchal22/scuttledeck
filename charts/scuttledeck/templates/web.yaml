@@ -48,6 +48,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "scuttledeck.secretName" . }}
                   key: DATABASE_URL
+            - name: DASHBOARD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "scuttledeck.secretName" . }}
+                  key: DASHBOARD_PASSWORD
           ports:
             - name: http
               containerPort: 3000
