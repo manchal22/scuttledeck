@@ -80,7 +80,9 @@ helm install scuttledeck oci://ghcr.io/scuttledeck/charts/scuttledeck \
 Bundled Postgres, auto-generated secrets (persisted across upgrades — retrieve
 them with the commands helm prints), ingest + dashboard behind one host.
 Bring your own database with `--set postgres.enabled=false --set
-externalDatabaseUrl=…`. Chart source lives in [charts/scuttledeck](charts/scuttledeck).
+externalDatabaseUrl=…`. Chart source lives in [charts/scuttledeck](charts/scuttledeck);
+**full walkthrough — prerequisites, TLS, wiring GitHub, values reference,
+troubleshooting — in [docs/deploy-kubernetes.md](docs/deploy-kubernetes.md).**
 
 ### Docker Compose
 
