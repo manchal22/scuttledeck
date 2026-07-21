@@ -2,7 +2,15 @@
  * The Scuttledeck mark: a deck scuttle (hatch) as a sonar screen —
  * steel rim with bolts, radar rings, a sweep, and contact blips.
  */
-export function LogoMark({ size = 36, sweep = true }: { size?: number; sweep?: boolean }) {
+export function LogoMark({
+  size = 36,
+  sweep = true,
+  animated = false,
+}: {
+  size?: number;
+  sweep?: boolean;
+  animated?: boolean;
+}) {
   return (
     <svg
       width={size}
@@ -39,15 +47,15 @@ export function LogoMark({ size = 36, sweep = true }: { size?: number; sweep?: b
       </g>
       {/* sweep wedge + leading edge */}
       {sweep && (
-        <>
+        <g className={animated ? "logo-sweep" : undefined}>
           <path d="M32 32 L32 7 A25 25 0 0 1 53.65 19.5 Z" fill="url(#sd-sweep)" />
           <path d="M32 32 L53.65 19.5" stroke="#2fd4a4" strokeWidth="2" strokeLinecap="round" />
-        </>
+        </g>
       )}
       {/* contact blips */}
-      <circle cx="46.5" cy="24.5" r="2.6" fill="#2fd4a4" />
-      <circle cx="24" cy="44" r="2" fill="#2fd4a4" opacity="0.45" />
-      <circle cx="38" cy="50" r="1.5" fill="#2fd4a4" opacity="0.25" />
+      <circle cx="46.5" cy="24.5" r="2.6" fill="#2fd4a4" className={animated ? "animate-blip" : undefined} />
+      <circle cx="24" cy="44" r="2" fill="#2fd4a4" opacity="0.45" className={animated ? "animate-blip" : undefined} style={animated ? { animationDelay: "0.6s" } : undefined} />
+      <circle cx="38" cy="50" r="1.5" fill="#2fd4a4" opacity="0.25" className={animated ? "animate-blip" : undefined} style={animated ? { animationDelay: "1.1s" } : undefined} />
     </svg>
   );
 }

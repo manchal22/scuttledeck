@@ -6,6 +6,10 @@ metadata:
     {{- include "scuttledeck.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.web.service.type }}
+  {{- with .Values.web.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: web

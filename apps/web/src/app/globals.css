@@ -169,3 +169,17 @@ body {
 .animate-blip {
   animation: blip 1.6s ease-in-out infinite;
 }
+
+/* radar sweep rotation for the animated logo (login page) */
+@keyframes sweep-rotate {
+  to { transform: rotate(360deg); }
+}
+.logo-sweep {
+  animation: sweep-rotate 6s linear infinite;
+  transform-origin: 32px 32px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-sweep, .animate-blip {
+    animation: none;
+  }
+}

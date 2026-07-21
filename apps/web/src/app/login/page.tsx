@@ -14,7 +14,7 @@ export default async function LoginPage({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-rail">
       <div className="w-full max-w-sm px-6">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <LogoMark size={64} />
+          <LogoMark size={64} animated />
           <h1 className="font-display text-2xl font-bold tracking-tight text-rail-ink">
             scuttledeck
           </h1>

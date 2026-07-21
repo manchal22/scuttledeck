@@ -25,6 +25,10 @@ ingest:
     # -- ClusterIP (default; put an Ingress in front) or LoadBalancer for a
     # direct public/internal address without an ingress controller.
     type: ClusterIP
+    # -- CIDR allowlist for LoadBalancer traffic. For a production ingest:
+    # GitHub's webhook ranges (api.github.com/meta → "hooks") plus your
+    # runner egress CIDRs. Empty = open.
+    loadBalancerSourceRanges: []
   image:
     repository: ghcr.io/scuttledeck/scuttledeck-ingest
     tag: ""            # defaults to chart appVersion
@@ -40,6 +44,7 @@ web:
   replicas: 1
   service:
     type: ClusterIP
+    loadBalancerSourceRanges: []
   image:
     repository: ghcr.io/scuttledeck/scuttledeck-web
     tag: ""            # defaults to chart appVersion

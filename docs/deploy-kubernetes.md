@@ -176,6 +176,48 @@ helm uninstall scuttledeck -n scuttledeck
 kubectl delete pvc data-scuttledeck-postgres-0 -n scuttledeck
 ```
 
+## Production hardening
+
+The exposure model that works: **the dashboard stays private, only the
+ingest faces the internet — and only to the callers that need it.**
+
+```yaml
+web:
+  service:
+    type: ClusterIP          # port-forward / VPN / internal ingress only
+
+ingest:
+  service:
+    type: LoadBalancer
+    loadBalancerSourceRanges:
+      # GitHub's webhook egress (refresh from https://api.github.com/meta → "hooks")
+      - 192.30.252.0/22
+      - 185.199.108.0/22
+      - 140.82.112.0/20
+      - 143.55.64.0/20
+      # + your runner egress CIDRs (self-hosted runners: your corp NAT;
+      #   GitHub-hosted: the "actions" ranges from /meta — they are wide)
+```
+
+Everything on the ingest is authenticated anyway (webhook HMAC, hashed
+bearer tokens), so the allowlist is defense in depth, not the only lock.
+
+The rest of the checklist:
+
+1. **TLS** — non-negotiable before real traffic: the dashboard password and
+   ingest tokens must not ride plaintext. cert-manager + ingress (chart
+   supports it), or a TLS-terminating LB.
+2. **`ingest.replicas: 2`** — the queue is SKIP LOCKED multi-replica safe;
+   with the redelivery sweeper this makes ingest downtime a non-event.
+3. **Database** — the bundled Postgres is a single instance with no backups.
+   For production point `externalDatabaseUrl` at a managed/HA Postgres, or
+   at minimum schedule `pg_dump` of the PVC.
+4. **Pin image tags** — run releases, not `latest`
+   (`ingest.image.tag`/`web.image.tag`).
+5. **Self-hosted runners?** Telemetry can stay entirely inside your network:
+   point the `scuttledeck/setup` endpoint at an internal LB/DNS name and
+   keep only the webhook path internet-reachable.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
