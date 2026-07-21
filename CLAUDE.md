@@ -86,7 +86,7 @@ Fleet (KPI strip: repos active, runs 7d, success rate, PRs reviewed, spend MTD v
    **Exit: one run visible end-to-end with true token cost. Nothing else matters until this works.**
 
 **P1 · MVP (current phase):** wire the discovery scanner to a poller (code exists, nothing invokes it — Inventory panel stays empty until then), GitHub App manifest flow (replaces per-repo webhooks), Tier-1 Anthropic Analytics poller, transfer repo to the `scuttledeck` org + first release (images/chart publish on merge to main). Already landed ahead of schedule: Fleet + Runs views, Helm chart (validated on a real OKE cluster), landing page + Pages deploy, k8s/gateway docs. Exit: a stranger self-hosts in <30 min.
-**P2 · Per-run economics:** PR view, cost-per-review, cost_report reconciliation.
+**P2 · Per-run economics + operability:** PR view, cost-per-review, cost_report reconciliation. People & outcome metrics: normalize `pull_request` webhooks into a PR lifecycle table (author, opened/closed, merged) → reviews-and-cost per actor and per PR author, **% of Claude-reviewed PRs merged**, time-to-merge, cost per merged PR (org webhook must subscribe to the Pull requests event — raw deliveries accumulate even before the normalizer lands). Per-person cost views ship as team insight, aggregated by default — not individual surveillance. Settings surface (CRUD): ingest token rotation/revocation from the UI, installation/org management, configurable session TTL. (Dashboard auth exists since P1: shared password, HMAC session cookies, 7-day expiry, logout.)
 **P3 · Operate:** alert engine, Slack, SSO/OIDC, multi-org, retention.
 
 ## Working conventions

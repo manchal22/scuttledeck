@@ -77,8 +77,8 @@ helm install scuttledeck oci://ghcr.io/scuttledeck/charts/scuttledeck \
   --set ingress.enabled=true --set ingress.host=scuttledeck.your.domain
 ```
 
-Bundled Postgres, auto-generated secrets (persisted across upgrades — retrieve
-them with the commands helm prints), ingest + dashboard behind one host.
+Bundled Postgres, auto-generated secrets (persisted across upgrades), and a
+password-protected dashboard — **helm prints the login password on install**.
 Bring your own database with `--set postgres.enabled=false --set
 externalDatabaseUrl=…`. Chart source lives in [charts/scuttledeck](charts/scuttledeck);
 **full walkthrough — prerequisites, TLS, wiring GitHub, values reference,

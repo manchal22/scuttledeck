@@ -49,9 +49,12 @@ ingress:
       hosts: [scuttledeck.your.domain]
 ```
 
-Everything else has sane defaults. The webhook HMAC secret, ingest token, and
-Postgres password are **generated on first install and persist across
-upgrades** — you never have to manage them unless you want to.
+Everything else has sane defaults. The webhook HMAC secret, ingest token,
+Postgres password, and **dashboard login password** are generated on first
+install and persist across upgrades — you never have to manage them unless
+you want to. **`helm install` prints the dashboard password in its output**;
+every page of the dashboard requires it (session cookie, `/api/logout` to
+sign out). Set `web.password` to choose your own.
 
 Footprint is tiny: the ingest is a single static Go binary (measured ~6 MiB
 resident and ~2 millicores idle on a real cluster), so the chart ships no
@@ -118,6 +121,8 @@ for testing, see the README's local quick start.)
 | `github.org` | — | **Required.** Org/user being monitored |
 | `github.webhookSecret` | auto-generated | Webhook HMAC secret |
 | `ingest.token` | auto-generated | Bearer token CI runners send |
+| `web.password` | auto-generated | Dashboard login password (printed by helm NOTES) |
+| `ingest.service.type` / `web.service.type` | `ClusterIP` | `LoadBalancer` for a direct address without an ingress controller |
 | `ingest.image.repository` | `ghcr.io/scuttledeck/scuttledeck-ingest` | |
 | `web.image.repository` | `ghcr.io/scuttledeck/scuttledeck-web` | |
 | `*.image.tag` | `latest` | Pin to a release tag in production |

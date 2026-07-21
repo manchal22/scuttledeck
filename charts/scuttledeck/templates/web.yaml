@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "scuttledeck.labels" . | nindent 4 }}
 spec:
+  type: {{ .Values.web.service.type }}
   selector:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: web
@@ -47,6 +48,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "scuttledeck.secretName" . }}
                   key: DATABASE_URL
+            - name: DASHBOARD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "scuttledeck.secretName" . }}
+                  key: DASHBOARD_PASSWORD
           ports:
             - name: http
               containerPort: 3000

@@ -1,0 +1,33 @@
+{
+  "name": "scuttledeck",
+  "version": "0.0.1",
+  "description": "Fleet monitoring for the Claude Code GitHub Action — self-hosted dashboard for runs, PRs, and true per-run cost. This package currently ships a pointer CLI; the full CLI is on the roadmap.",
+  "license": "Apache-2.0",
+  "bin": {
+    "scuttledeck": "./bin.js"
+  },
+  "files": [
+    "bin.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manchal22/scuttledeck.git"
+  },
+  "homepage": "https://github.com/manchal22/scuttledeck",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "github-actions",
+    "observability",
+    "cost",
+    "opentelemetry",
+    "self-hosted"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
