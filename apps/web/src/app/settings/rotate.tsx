@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { CopyButton } from "@/components/copy-button";
 import { rotateToken, type RotateResult } from "./actions";
 
 export function RotateTokenButton({ installationId }: { installationId: number }) {
@@ -22,7 +23,10 @@ export function RotateTokenButton({ installationId }: { installationId: number }
           <p className="font-mono-data text-[0.62rem] uppercase tracking-[0.16em] text-ink-faint">
             new token — shown once, copy it now
           </p>
-          <code className="font-mono-data break-all text-[0.75rem]">{state.token}</code>
+          <div className="flex items-start gap-2">
+            <code className="font-mono-data flex-1 break-all text-[0.75rem] select-all">{state.token}</code>
+            <CopyButton text={state.token} />
+          </div>
           <p className="mt-1.5 text-[0.7rem] leading-relaxed text-ink-soft">
             Update the <code>SCUTTLEDECK_TOKEN</code> Actions secret, and — if the deployment sets{" "}
             <code>INGEST_TOKEN</code> via env/Helm — the deployment secret too, or the old value re-registers on the

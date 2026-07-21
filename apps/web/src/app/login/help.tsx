@@ -2,22 +2,13 @@
 
 import { useState } from "react";
 
-const CMD =
-  "kubectl get secret scuttledeck-secrets -n scuttledeck -o jsonpath='{.data.DASHBOARD_PASSWORD}' | base64 -d";
-
+/**
+ * Deliberately sparse: this page is pre-auth and public, so it names no
+ * namespaces, secret names, or commands. Operators have the helm NOTES and
+ * the deploy guide; everyone else gets the password from their operator.
+ */
 export function LoginHelp() {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(CMD);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      /* clipboard unavailable (http origin) — text stays selectable */
-    }
-  };
 
   return (
     <div className="mt-4 text-center">
@@ -29,27 +20,19 @@ export function LoginHelp() {
         ? where do I find the password
       </button>
       {open && (
-        <div className="mt-3 rounded-md border border-rail-2 bg-rail-2/50 p-3 text-left">
-          <p className="font-mono-data mb-2 text-[0.62rem] uppercase tracking-[0.16em] text-rail-faint">
-            printed by helm install — or read it from the cluster:
-          </p>
-          <div className="flex items-start gap-2">
-            <code className="font-mono-data flex-1 break-all text-[0.68rem] leading-relaxed text-rail-ink select-all">
-              {CMD}
-            </code>
-            <button
-              type="button"
-              onClick={copy}
-              title="Copy command"
-              className="font-mono-data shrink-0 rounded border border-rail-2 px-2 py-1 text-[0.65rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
-            >
-              {copied ? "✓ copied" : "⧉ copy"}
-            </button>
-          </div>
-          <p className="font-mono-data mt-2 text-[0.6rem] leading-relaxed text-rail-faint">
-            docker compose users: it&apos;s the DASHBOARD_PASSWORD env on the web service.
-          </p>
-        </div>
+        <p className="font-mono-data mx-auto mt-3 max-w-xs text-[0.68rem] leading-relaxed text-rail-faint">
+          It&apos;s generated at deploy time — ask whoever runs this instance.
+          Operators: <code>helm install</code> printed it, and the{" "}
+          <a
+            href="https://github.com/manchal22/scuttledeck/blob/main/docs/deploy-kubernetes.md#after-install"
+            className="underline hover:text-signal-bright"
+            target="_blank"
+            rel="noreferrer"
+          >
+            deploy guide
+          </a>{" "}
+          shows how to read it back.
+        </p>
       )}
     </div>
   );
