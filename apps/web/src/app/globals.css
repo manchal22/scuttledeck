@@ -170,6 +170,24 @@ body {
   animation: blip 1.6s ease-in-out infinite;
 }
 
+/* theme switch: View Transitions crossfade, or property-transition fallback */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+}
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 300ms ease-out,
+    color 300ms ease-out,
+    border-color 300ms ease-out,
+    fill 300ms ease-out,
+    stroke 300ms ease-out !important;
+}
+
 /* radar sweep rotation for the animated logo (login page) */
 @keyframes sweep-rotate {
   to { transform: rotate(360deg); }

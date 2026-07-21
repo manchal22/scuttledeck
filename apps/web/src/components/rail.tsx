@@ -55,9 +55,25 @@ export function Rail({
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    setCookie("sd_theme", next);
+    const apply = () => {
+      setTheme(next);
+      document.documentElement.dataset.theme = next;
+      setCookie("sd_theme", next);
+    };
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+    if (!reduceMotion && typeof doc.startViewTransition === "function") {
+      // crossfade the whole page between themes
+      doc.startViewTransition(apply);
+    } else if (!reduceMotion) {
+      // fallback: briefly transition color-bearing properties
+      const el = document.documentElement;
+      el.classList.add("theme-transition");
+      apply();
+      window.setTimeout(() => el.classList.remove("theme-transition"), 400);
+    } else {
+      apply();
+    }
   };
 
   return (
@@ -150,7 +166,7 @@ export function Rail({
 
         {!collapsed && (
           <p className="font-mono-data mt-3 text-[0.62rem] leading-relaxed text-rail-faint">
-            v0.1.0-rc · community project —<br />
+            v0.1.0 · community project —<br />
             not affiliated with Anthropic
           </p>
         )}
