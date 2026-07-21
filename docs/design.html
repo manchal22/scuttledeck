@@ -499,17 +499,16 @@ flowchart LR
 <section id="stack">
   <span class="eyebrow">10 · Stack</span>
   <h2>Boring on purpose</h2>
-  <p>Optimized for OSS contributor accessibility and one-command self-hosting: a single TypeScript monorepo, a single database.</p>
+  <p>Optimized for one-command self-hosting and a tiny operational footprint: a static Go binary for everything server-side, a single database. <em>(Revised 2026-07-21: the backend moved from TypeScript to Go after the P0 spike validated end-to-end — same schema, same routes, same correlator semantics.)</em></p>
   <div class="tablewrap">
     <table>
       <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
       <tbody>
-        <tr><td>Language</td><td>TypeScript everywhere</td><td>Octokit + OTel JS SDKs are first-class; one language lowers the contribution bar</td></tr>
-        <tr><td>Ingest/API</td><td>Node + Hono</td><td>Lightweight, fast HMAC/webhook handling; OTLP/HTTP JSON+protobuf parsing via official proto defs</td></tr>
-        <tr><td>Queue/workers</td><td>pg-boss</td><td>Queue inside Postgres — no Redis dependency in the default deploy</td></tr>
-        <tr><td>Database</td><td>Postgres 16 + Drizzle</td><td>Entities and metrics in one store; ClickHouse only if metric volume ever demands it</td></tr>
+        <tr><td>Ingest &amp; correlator</td><td>Go (net/http + pgx)</td><td>Static ~15&nbsp;MB image, ~6&nbsp;MiB resident, millisecond cold starts; the ecosystem convention for k8s-adjacent infra tools</td></tr>
+        <tr><td>Queue/workers</td><td>Postgres <code>FOR UPDATE SKIP LOCKED</code> job table</td><td>Queue inside Postgres — no Redis or broker in any deploy; multi-replica safe by construction</td></tr>
+        <tr><td>Database</td><td>Postgres 16, SQL migrations embedded in the binary</td><td>Entities and metrics in one store, migrations applied on boot; ClickHouse only if metric volume ever demands it</td></tr>
         <tr><td>Dashboard</td><td>Next.js + Tailwind</td><td>Familiar to the widest contributor pool; server components for data-heavy tables</td></tr>
-        <tr><td>Deploy</td><td>Docker Compose (→ Helm later)</td><td><code>docker compose up</code> is the 30-minute-install promise</td></tr>
+        <tr><td>Deploy</td><td>Docker Compose + Helm chart</td><td><code>docker compose up</code> or one <code>helm install</code> — the 30-minute-install promise, field-tested on OKE</td></tr>
         <tr><td>License</td><td>Apache-2.0</td><td>Maximizes adoption in enterprises where the buyers sit; moat is execution, not license</td></tr>
       </tbody>
     </table>
@@ -527,7 +526,7 @@ flowchart LR
         <tr><td>Anthropic ships this natively</td><td><span class="pill crit">HIGH</span></td><td>Real possibility (Console already has Claude Code analytics). Defenses: self-hosted + GitHub-native context (PR joins) that Console lacks; multi-source cost truth; move fast. Even so, an OSS tool can win the "my data stays inside" segment.</td></tr>
         <tr><td>OTel→run correlation fragility</td><td><span class="pill warn">MED</span></td><td>Resource attributes injected by the setup action make the join explicit; heuristic fallback is labeled low-confidence. The spike phase exists to de-risk exactly this.</td></tr>
         <tr><td>Discovery scan rate limits on huge orgs</td><td><span class="pill warn">MED</span></td><td>ETag conditional requests, nightly cadence, push-event triggered rescans of changed workflow files only.</td></tr>
-        <tr><td>API surface churn (action v2, Analytics API changes)</td><td><span class="pill warn">MED</span></td><td>Version-tolerant YAML matcher (<code>claude-code-action@*</code> and forks); poller schemas validated with zod, alert on drift.</td></tr>
+        <tr><td>API surface churn (action v2, Analytics API changes)</td><td><span class="pill warn">MED</span></td><td>Version-tolerant YAML matcher (<code>claude-code-action@*</code> and forks); poller payloads parsed tolerantly, alert on drift.</td></tr>
         <tr><td>Subscription-OAuth installs have no cost data</td><td><span class="pill ok">LOW</span></td><td>Designed-in state: tokens shown, cost marked "included in subscription."</td></tr>
       </tbody>
     </table>

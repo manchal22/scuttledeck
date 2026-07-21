@@ -8,7 +8,7 @@
 
 ![Scuttledeck fleet dashboard](docs/screenshot-fleet.png)
 
-> ⚠️ **Status: pre-alpha.** The design is complete ([docs/design.html](docs/design.html)) and the Phase 0 spike has landed: webhook ingest, the OTLP endpoint, and the run↔cost correlator are proven end-to-end against a real Postgres. Star/watch the repo to follow along.
+> ⚠️ **Status: pre-alpha.** The design is complete ([docs/design.html](docs/design.html)) and the Phase 0 spike is **proven on live infrastructure**: a real `claude-code-action` run — routed through a LiteLLM→Vertex gateway — landed in the dashboard with its exact token cost, matching the gateway's spend log to the cent. The backend is a single static Go binary; the Helm chart is field-tested on a real Kubernetes cluster. Star/watch the repo to follow along.
 
 > Scuttledeck is an independent community project. It is **not affiliated with, endorsed by, or supported by Anthropic**.
 
@@ -116,8 +116,8 @@ docker compose up -d                     # ingest on :8787
 
 ## Roadmap
 
-- [x] **P0 — Spike:** webhook ingest, workflow discovery, `scuttledeck/setup@v1`, OTLP endpoint, and the run↔cost correlator proven end-to-end *(landed — integration-tested against captured payloads; validation against a live org is the last P0 step)*
-- [ ] **P1 — MVP:** Fleet + Runs views, Anthropic Analytics poller, Docker Compose deploy, docs
+- [x] **P0 — Spike:** webhook ingest, workflow discovery, `scuttledeck/setup@v1`, OTLP endpoint, and the run↔cost correlator proven end-to-end *(done — validated on a live run through an LLM gateway, cost matched the gateway spend log to the cent)*
+- [ ] **P1 — MVP:** discovery poller, GitHub App install flow, Anthropic Analytics poller, first release *(Fleet + Runs views, Helm deploy, and docs already landed)*
 - [ ] **P2 — Per-run economics:** PR view, cost-per-review, billing reconciliation
 - [ ] **P3 — Operate:** alerting, Slack, SSO/OIDC, multi-org, retention policies
 
