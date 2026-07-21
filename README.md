@@ -100,13 +100,13 @@ for the three configuration rakes and which cost tiers apply.
 ### Hacking on it locally
 
 ```bash
-pnpm install
 docker compose up -d --wait postgres     # Postgres 16
-pnpm e2e                                 # unit + integration tests (the P0 exit proof)
+./scripts/e2e.sh                         # full Go test suite incl. the P0 exit proof
 
 # dashboard with demo data
 DATABASE_URL=postgres://scuttledeck:scuttledeck@localhost:5432/scuttledeck \
-  pnpm --filter @scuttledeck/db seed
+  go run ./cmd/seed
+pnpm install
 DATABASE_URL=postgres://scuttledeck:scuttledeck@localhost:5432/scuttledeck \
   pnpm --filter @scuttledeck/web dev     # → http://localhost:3000
 
@@ -125,7 +125,7 @@ The full architecture — data sources (verified against platform docs), data mo
 
 ## Stack
 
-TypeScript monorepo · [Hono](https://hono.dev) ingest · Postgres 16 + [Drizzle](https://orm.drizzle.team) · [pg-boss](https://github.com/timgit/pg-boss) queue (no Redis) · Next.js dashboard · Docker Compose deploy.
+**Go** ingest & correlator (single ~15 MB static image, embedded SQL migrations, Postgres `SKIP LOCKED` job queue — no Redis) · Postgres 16 · **Next.js** dashboard · Docker Compose + **Helm** deploy.
 
 ## Contributing
 

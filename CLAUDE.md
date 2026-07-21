@@ -41,19 +41,27 @@ Pollers ─────────┘   (GitHub backfill scan · Anthropic Anal
 
 `installation` (github_install_id, org, admin_api_key_ref, ingest_token_hash) · `repo` (has_action, first_seen) · `workflow` (path, action_ref, action_version, triggers[], model_config — powers drift detection) · `run` (gh_run_id, trigger_event, actor, pr_number, status, conclusion, duration_s) · `agent_session` (run_id nullable, session_id, model, tok_in/out/cache_read/cache_create, cost_usd, source ∈ {otel, analytics_api}, confidence) · `pr_interaction` (pr_number, kind ∈ {review, comment, commit, pr_opened}, author, run_id) · `cost_daily` (api_key_name, model, tokens, est_cost_usd, billed_cost_usd) · `alert_rule` / `alert_event`
 
-## Stack (decided — don't reopen)
+## Stack (decided — don't reopen; backend rewritten TS→Go 2026-07-21 by owner decision)
 
-TypeScript monorepo (pnpm workspaces). Ingest/API: **Node + Hono**. Queue: **pg-boss** (no Redis in default deploy). DB: **Postgres 16 + Drizzle**. Dashboard: **Next.js (App Router) + Tailwind**. GitHub: **Octokit**. Validation: **zod** on every external payload (webhooks, OTLP, Anthropic responses) — alert on schema drift, don't crash. Deploy: **Docker Compose** (`docker compose up` must fully work). License: **Apache-2.0**.
+Backend: **Go** (net/http, pgx). Schema source of truth: **embedded SQL migrations** in `internal/db/migrations` — the ingest binary applies them on boot. Queue: **Postgres `FOR UPDATE SKIP LOCKED` job table** (`internal/queue`) — no Redis, no broker. Dashboard: **Next.js (App Router) + Tailwind**, reading Postgres via `packages/db` — a typed drizzle **mirror** of the schema (update `schema.ts` whenever a Go migration changes tables). Validation: tolerant Go JSON structs on every external payload — log schema drift, never crash. Deploy: **Docker Compose** (`docker compose up` must fully work) and **Helm** (`charts/scuttledeck`, one-command k8s). License: **Apache-2.0**.
 
-Suggested layout:
+Layout:
 
 ```
-apps/web        # Next.js dashboard
-apps/ingest     # Hono: /webhooks/github (HMAC) + /v1/otlp/metrics (bearer ingest token)
-packages/db     # Drizzle schema + migrations
-packages/core   # correlator, pollers, alert rules, shared types
-actions/setup   # composite action: scuttledeck/setup@v1
-docker-compose.yml
+cmd/ingest        # main: webhooks + OTLP server, migrations on boot, workers
+cmd/seed          # deterministic demo data
+internal/db       # pool + embedded migrations (schema source of truth)
+internal/httpapi  # /webhooks/github (HMAC) + /v1/otlp/metrics (bearer token)
+internal/otlp     # OTLP JSON parsing + claude_code.* extraction
+internal/correlate# the run↔session join (exact + heuristic, both directions)
+internal/ghevents # workflow_run normalization
+internal/discovery# org scanner (YAML parse, ETag cache)
+internal/queue    # SKIP LOCKED job queue + handlers
+internal/e2e      # integration suite (needs DATABASE_URL)
+apps/web          # Next.js dashboard
+packages/db       # drizzle schema mirror for the dashboard's typed reads
+actions/setup     # composite action (published mirror: scuttledeck/setup)
+charts/scuttledeck# Helm chart
 ```
 
 ## Dashboard views

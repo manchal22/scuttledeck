@@ -18,7 +18,7 @@ services:
   ingest:
     build:
       context: .
-      dockerfile: apps/ingest/Dockerfile
+      dockerfile: Dockerfile.ingest
     environment:
       DATABASE_URL: postgres://scuttledeck:scuttledeck@postgres:5432/scuttledeck
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-change-me}
