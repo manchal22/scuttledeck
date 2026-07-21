@@ -73,6 +73,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
             </nav>
             <div className="px-5 pb-5">
+              {process.env.DASHBOARD_PASSWORD && (
+                <a
+                  href="/api/logout"
+                  className="font-mono-data mb-3 inline-flex items-center gap-1.5 rounded-md border border-rail-2 px-2.5 py-1 text-[0.68rem] text-rail-faint hover:border-signal-deep hover:text-signal-bright"
+                >
+                  ⎋ sign out
+                </a>
+              )}
               <p className="font-mono-data text-[0.62rem] leading-relaxed text-rail-faint">
                 v0.0.1 · p0 spike
                 <br />
