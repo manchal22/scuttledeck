@@ -9,14 +9,18 @@ export async function POST(req: NextRequest) {
   // Only ever redirect within the app.
   const safeNext = nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/";
 
+  // Relative Location headers keep the browser on whatever host it used —
+  // req.url reflects the server bind address (0.0.0.0) in standalone mode.
   if (!expected || !passwordMatches(candidate, expected)) {
-    const login = new URL("/login", req.url);
-    login.searchParams.set("error", "1");
-    if (safeNext !== "/") login.searchParams.set("next", safeNext);
-    return NextResponse.redirect(login, 303);
+    const params = new URLSearchParams({ error: "1" });
+    if (safeNext !== "/") params.set("next", safeNext);
+    return new NextResponse(null, {
+      status: 303,
+      headers: { Location: `/login?${params.toString()}` },
+    });
   }
 
-  const res = NextResponse.redirect(new URL(safeNext, req.url), 303);
+  const res = new NextResponse(null, { status: 303, headers: { Location: safeNext } });
   res.cookies.set(SESSION_COOKIE, mintSessionToken(expected), {
     httpOnly: true,
     sameSite: "lax",
