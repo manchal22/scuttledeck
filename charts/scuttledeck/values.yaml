@@ -8,6 +8,10 @@ ingest:
   # -- Ingest bearer token CI runners send. Leave empty to auto-generate once.
   token: ""
   replicas: 1
+  service:
+    # -- ClusterIP (default; put an Ingress in front) or LoadBalancer for a
+    # direct public/internal address without an ingress controller.
+    type: ClusterIP
   image:
     repository: ghcr.io/scuttledeck/scuttledeck-ingest
     tag: ""            # defaults to chart appVersion
@@ -16,6 +20,8 @@ ingest:
 
 web:
   replicas: 1
+  service:
+    type: ClusterIP
   image:
     repository: ghcr.io/scuttledeck/scuttledeck-web
     tag: ""            # defaults to chart appVersion

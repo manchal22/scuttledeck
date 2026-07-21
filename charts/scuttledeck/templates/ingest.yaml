@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "scuttledeck.labels" . | nindent 4 }}
 spec:
+  type: {{ .Values.ingest.service.type }}
   selector:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: ingest
