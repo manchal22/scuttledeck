@@ -30,7 +30,7 @@ Three ingestion planes joined in one store:
 
 ```
 GitHub webhooks ─┐
-OTLP from CI ────┼─→ ingest (Hono) → pg-boss queue → workers (normalize + correlate) → Postgres → API → Next.js dashboard
+OTLP from CI ────┼─→ ingest (Go) → SKIP LOCKED job queue → workers (normalize + correlate) → Postgres → Next.js dashboard
 Pollers ─────────┘   (GitHub backfill scan · Anthropic Analytics hourly · cost_report daily)          → alert engine → Slack
 ```
 
@@ -41,19 +41,27 @@ Pollers ─────────┘   (GitHub backfill scan · Anthropic Anal
 
 `installation` (github_install_id, org, admin_api_key_ref, ingest_token_hash) · `repo` (has_action, first_seen) · `workflow` (path, action_ref, action_version, triggers[], model_config — powers drift detection) · `run` (gh_run_id, trigger_event, actor, pr_number, status, conclusion, duration_s) · `agent_session` (run_id nullable, session_id, model, tok_in/out/cache_read/cache_create, cost_usd, source ∈ {otel, analytics_api}, confidence) · `pr_interaction` (pr_number, kind ∈ {review, comment, commit, pr_opened}, author, run_id) · `cost_daily` (api_key_name, model, tokens, est_cost_usd, billed_cost_usd) · `alert_rule` / `alert_event`
 
-## Stack (decided — don't reopen)
+## Stack (decided — don't reopen; backend rewritten TS→Go 2026-07-21 by owner decision)
 
-TypeScript monorepo (pnpm workspaces). Ingest/API: **Node + Hono**. Queue: **pg-boss** (no Redis in default deploy). DB: **Postgres 16 + Drizzle**. Dashboard: **Next.js (App Router) + Tailwind**. GitHub: **Octokit**. Validation: **zod** on every external payload (webhooks, OTLP, Anthropic responses) — alert on schema drift, don't crash. Deploy: **Docker Compose** (`docker compose up` must fully work). License: **Apache-2.0**.
+Backend: **Go** (net/http, pgx). Schema source of truth: **embedded SQL migrations** in `internal/db/migrations` — the ingest binary applies them on boot. Queue: **Postgres `FOR UPDATE SKIP LOCKED` job table** (`internal/queue`) — no Redis, no broker. Dashboard: **Next.js (App Router) + Tailwind**, reading Postgres via `packages/db` — a typed drizzle **mirror** of the schema (update `schema.ts` whenever a Go migration changes tables). Validation: tolerant Go JSON structs on every external payload — log schema drift, never crash. Deploy: **Docker Compose** (`docker compose up` must fully work) and **Helm** (`charts/scuttledeck`, one-command k8s). License: **Apache-2.0**.
 
-Suggested layout:
+Layout:
 
 ```
-apps/web        # Next.js dashboard
-apps/ingest     # Hono: /webhooks/github (HMAC) + /v1/otlp/metrics (bearer ingest token)
-packages/db     # Drizzle schema + migrations
-packages/core   # correlator, pollers, alert rules, shared types
-actions/setup   # composite action: scuttledeck/setup@v1
-docker-compose.yml
+cmd/ingest        # main: webhooks + OTLP server, migrations on boot, workers
+cmd/seed          # deterministic demo data
+internal/db       # pool + embedded migrations (schema source of truth)
+internal/httpapi  # /webhooks/github (HMAC) + /v1/otlp/metrics (bearer token)
+internal/otlp     # OTLP JSON parsing + claude_code.* extraction
+internal/correlate# the run↔session join (exact + heuristic, both directions)
+internal/ghevents # workflow_run normalization
+internal/discovery# org scanner (YAML parse, ETag cache)
+internal/queue    # SKIP LOCKED job queue + handlers
+internal/e2e      # integration suite (needs DATABASE_URL)
+apps/web          # Next.js dashboard
+packages/db       # drizzle schema mirror for the dashboard's typed reads
+actions/setup     # composite action (published mirror: scuttledeck/setup)
+charts/scuttledeck# Helm chart
 ```
 
 ## Dashboard views
@@ -68,7 +76,7 @@ Fleet (KPI strip: repos active, runs 7d, success rate, PRs reviewed, spend MTD v
 
 ## Roadmap — build in this order
 
-**P0 · Spike (current phase — prove the risky joins before any UI):**
+**P0 · Spike — ✅ DONE 2026-07-21.** Proven live: a real `claude-code-action` run (via a LiteLLM→Vertex gateway) landed with its session joined `exact` and true cost, matching the gateway's spend log to the cent. Full e2e suite in `internal/e2e` covers both arrival orders, idempotent re-delivery, and the heuristic fallback. One deviation: the GitHub App manifest flow (item 2) was deferred to P1 — live validation used a plain repo webhook. Original checklist:
 1. Scaffold monorepo + docker-compose (Postgres + ingest).
 2. GitHub App manifest flow; webhook receiver with HMAC verification; persist `workflow_run` events for a test org.
 3. Discovery scanner: find workflows using the action in the test org via YAML parse.
@@ -77,7 +85,7 @@ Fleet (KPI strip: repos active, runs 7d, success rate, PRs reviewed, spend MTD v
 6. Run `claude-code-action` in a test repo with the setup step; verify the correlator lands one `run` row with its `agent_session` cost attached.
    **Exit: one run visible end-to-end with true token cost. Nothing else matters until this works.**
 
-**P1 · MVP:** Fleet + Runs views, Tier-1 Anthropic Analytics poller, docs, public repo. Exit: a stranger self-hosts in <30 min.
+**P1 · MVP (current phase):** wire the discovery scanner to a poller (code exists, nothing invokes it — Inventory panel stays empty until then), GitHub App manifest flow (replaces per-repo webhooks), Tier-1 Anthropic Analytics poller, transfer repo to the `scuttledeck` org + first release (images/chart publish on merge to main). Already landed ahead of schedule: Fleet + Runs views, Helm chart (validated on a real OKE cluster), landing page + Pages deploy, k8s/gateway docs. Exit: a stranger self-hosts in <30 min.
 **P2 · Per-run economics:** PR view, cost-per-review, cost_report reconciliation.
 **P3 · Operate:** alert engine, Slack, SSO/OIDC, multi-org, retention.
 

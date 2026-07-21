@@ -1,8 +1,11 @@
+/**
+ * Typed read layer for the dashboard. The schema's source of truth is the
+ * Go migrations in internal/db/migrations — when those change, update
+ * schema.ts to match. The Go ingest service applies migrations on boot;
+ * nothing in this package writes DDL.
+ */
 import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import * as schema from "./schema.js";
 
 export * as schema from "./schema.js";
@@ -14,14 +17,4 @@ export function createDb(connectionString: string) {
   const pool = new pg.Pool({ connectionString, max: 10 });
   const db = drizzle(pool, { schema });
   return { db, pool };
-}
-
-const MIGRATIONS_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "drizzle",
-);
-
-export async function runMigrations(db: Db, migrationsFolder = MIGRATIONS_DIR) {
-  await migrate(db, { migrationsFolder });
 }

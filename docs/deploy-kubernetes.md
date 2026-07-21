@@ -53,6 +53,11 @@ Everything else has sane defaults. The webhook HMAC secret, ingest token, and
 Postgres password are **generated on first install and persist across
 upgrades** — you never have to manage them unless you want to.
 
+Footprint is tiny: the ingest is a single static Go binary (measured ~6 MiB
+resident and ~2 millicores idle on a real cluster), so the chart ships no
+resource requests by default — set `ingest.resources`/`web.resources` if your
+cluster policy requires them.
+
 ## After install
 
 **1. Wait for pods** (web stays not-ready for a few seconds while the ingest
@@ -166,6 +171,7 @@ kubectl delete pvc data-scuttledeck-postgres-0 -n scuttledeck
 | Symptom | Likely cause |
 |---|---|
 | `ImagePullBackOff` | Images not published yet, or GHCR package is private — check the package visibility or add `imagePullSecrets` |
+| Postgres pod `ImageInspectError` — *"short name mode is enforcing"* | The node runtime (CRI-O on Oracle Linux, seen on OKE) rejects unqualified image names. The chart default is already fully qualified; if you override `postgres.image`, include the registry (`docker.io/library/…`) |
 | ingest pod crash-looping on first install | Postgres not ready yet; it settles once the DB accepts connections (migrations run on ingest boot) |
 | web pod not ready | Waits on the database — resolves seconds after ingest completes migrations |
 | Webhook deliveries fail with 401 | Webhook secret mismatch — re-read it from the k8s Secret and update the GitHub webhook config |

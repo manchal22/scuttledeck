@@ -8,19 +8,12 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts"
   },
-  "scripts": {
-    "generate": "drizzle-kit generate",
-    "migrate": "tsx src/migrate.ts",
-    "seed": "tsx src/seed.ts"
-  },
   "dependencies": {
     "drizzle-orm": "^0.44.2",
     "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
-    "@types/pg": "^8.11.10",
-    "drizzle-kit": "^0.31.1",
-    "tsx": "^4.19.2"
+    "@types/pg": "^8.11.10"
   }
 }

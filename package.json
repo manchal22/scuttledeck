@@ -10,12 +10,11 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "pnpm -r test",
-    "test:integration": "pnpm --filter @scuttledeck/ingest test:integration",
-    "db:generate": "pnpm --filter @scuttledeck/db generate",
-    "db:migrate": "pnpm --filter @scuttledeck/db migrate",
-    "dev:ingest": "pnpm --filter @scuttledeck/ingest dev",
-    "e2e": "bash scripts/e2e.sh"
+    "test": "go test ./...",
+    "e2e": "bash scripts/e2e.sh",
+    "dev:ingest": "go run ./cmd/ingest",
+    "dev:web": "pnpm --filter @scuttledeck/web dev",
+    "seed": "go run ./cmd/seed"
   },
   "devDependencies": {
     "@types/node": "^22",

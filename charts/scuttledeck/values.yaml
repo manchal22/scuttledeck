@@ -25,7 +25,9 @@ web:
 postgres:
   # -- Run a bundled Postgres 16 StatefulSet. Disable to bring your own database.
   enabled: true
-  image: postgres:16-alpine
+  # Fully qualified — some runtimes (e.g. CRI-O on Oracle Linux) enforce
+  # short-name resolution and reject bare `postgres:16-alpine`.
+  image: docker.io/library/postgres:16-alpine
   user: scuttledeck
   database: scuttledeck
   # -- Leave empty to auto-generate once (persisted across upgrades).
