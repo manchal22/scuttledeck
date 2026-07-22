@@ -1,4 +1,4 @@
-// Package alerts evaluates the four rule kinds from the design — monthly
+// Package alerts evaluates the built-in rule kinds — monthly
 // budget, cost anomaly vs trailing median, failure-rate spike, stale action
 // version — and notifies Slack. Each rule re-fires at most once per cooldown.
 package alerts

@@ -179,8 +179,8 @@ func RollupSession(ctx context.Context, pool *pgxpool.Pool, sessionID string) er
 }
 
 // CorrelateSession is the session-side pass: exact on the run-id hint, else
-// repo+time heuristic. If a hint names a run we haven't seen, we wait for
-// the webhook — never guess when an exact answer is coming.
+// repo+time heuristic. When a hint names a run that has not arrived yet,
+// correlation waits for the webhook — heuristics never override an exact hint.
 func CorrelateSession(ctx context.Context, pool *pgxpool.Pool, sessionID string) error {
 	var (
 		id           int64

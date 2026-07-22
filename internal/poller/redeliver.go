@@ -16,7 +16,7 @@ import (
 // GitHub never retries failed webhook deliveries on its own — an ingest
 // outage would silently lose events for up to 30 days. This sweeper lists
 // recent deliveries on every hook pointing at us, and redelivers any that
-// GitHub marked failed *and* that never reached our webhook_delivery table
+// GitHub marked failed and that never reached the webhook_delivery table
 // (redeliveries keep their GUID, so a success self-limits the sweep).
 
 const redeliveryLookback = 48 * time.Hour
@@ -65,14 +65,14 @@ func (g *ghAPI) do(ctx context.Context, method, path string, out any) (int, erro
 }
 
 // RunRedelivery sweeps org- and repo-level hooks that point at this
-// Scuttledeck instance and redelivers failed deliveries we never received.
+// Scuttledeck instance and redelivers failed deliveries that were never received.
 func RunRedelivery(ctx context.Context, pool *pgxpool.Pool, baseURL, token string) error {
 	if baseURL == "" {
 		baseURL = "https://api.github.com"
 	}
 	gh := &ghAPI{baseURL: baseURL, token: token, http: &http.Client{Timeout: 30 * time.Second}}
 
-	// hook scopes: each installation's org hooks + hooks on repos we track
+	// hook scopes: each installation's org hooks plus hooks on tracked repos
 	scopes := map[string]bool{} // API path prefix, e.g. "orgs/acme" or "repos/acme/api"
 	orgRows, err := pool.Query(ctx, `select org from installation`)
 	if err != nil {
@@ -112,7 +112,7 @@ func RunRedelivery(ctx context.Context, pool *pgxpool.Pool, baseURL, token strin
 			continue
 		}
 		if status == http.StatusNotFound || status == http.StatusForbidden {
-			continue // scope has no hooks we can see (e.g. org endpoint on a user account)
+			continue // scope has no visible hooks (e.g. org endpoint on a user account)
 		}
 		for _, hook := range hooks {
 			if !strings.Contains(hook.Config.URL, "/webhooks/github") {
@@ -163,7 +163,7 @@ func sweepHook(ctx context.Context, pool *pgxpool.Pool, gh *ghAPI, scope string,
 		if succeeded[guid] {
 			continue
 		}
-		// Did it reach us anyway (e.g. GitHub logged a timeout but we processed it)?
+		// Skip deliveries that arrived despite a logged failure (e.g. response timeout after processing).
 		var seen bool
 		if err := pool.QueryRow(ctx,
 			`select exists (select 1 from webhook_delivery where delivery_id = $1)`, guid).Scan(&seen); err != nil {

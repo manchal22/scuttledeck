@@ -7,7 +7,7 @@ telemetry is **client-side**: Claude Code counts tokens and estimates cost
 itself and ships them to *your* Scuttledeck ingest, regardless of where model
 traffic goes.
 
-This guide is written from a validated setup: LiteLLM proxying to Vertex AI.
+The configuration below is verified against LiteLLM proxying to Vertex AI.
 
 ## Workflow configuration
 
@@ -27,7 +27,7 @@ This guide is written from a validated setup: LiteLLM proxying to Vertex AI.
     ANTHROPIC_SMALL_FAST_MODEL: vertex_ai/claude-sonnet-4-6
 ```
 
-The rakes, in the order you'd otherwise step on them:
+Configuration requirements:
 
 1. **Base URL is the Anthropic-compatible root.** Claude Code appends
    `/v1/messages`. If your LiteLLM serves the Anthropic format under a path
@@ -50,11 +50,10 @@ The rakes, in the order you'd otherwise step on them:
 | T3 · Anthropic cost report | ✅ invoice reconciliation | ✅ org totals | ❌ reconcile against gateway/provider billing |
 
 Notes on the OTel estimate: `claude_code.cost.usage` is computed by Claude
-Code from its model pricing table. In our validation run it matched the
-LiteLLM spend log **to the cent** ($0.2987), because the gateway billed the
-same list price. If your gateway applies custom pricing or markups, treat the
-OTel figure as list-price cost; reconciliation against LiteLLM's
-`/spend/logs` is on the roadmap.
+Code from its model pricing table. When the gateway bills provider list
+prices, this matches the gateway's own spend accounting. If the gateway
+applies custom pricing or markups, treat the OTel figure as list-price cost;
+reconciliation against LiteLLM's `/spend/logs` is on the roadmap.
 
 The `model` attribute arrives as your gateway alias (e.g.
 `vertex_ai/claude-sonnet-4-6`), and that's what dashboards display —

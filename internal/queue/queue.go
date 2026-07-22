@@ -1,6 +1,6 @@
 // Package queue is a minimal Postgres-backed job queue: FOR UPDATE SKIP
-// LOCKED polling, bounded retries with backoff, no external broker — the
-// same "no Redis" promise pg-boss gave the TS stack, in ~150 lines.
+// LOCKED polling, bounded retries with backoff. No external broker or Redis
+// is required; Postgres is the only dependency.
 package queue
 
 import (

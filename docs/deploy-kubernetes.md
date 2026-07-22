@@ -56,10 +56,9 @@ you want to. **`helm install` prints the dashboard password in its output**;
 every page of the dashboard requires it (session cookie, `/api/logout` to
 sign out). Set `web.password` to choose your own.
 
-Footprint is tiny: the ingest is a single static Go binary (measured ~6 MiB
-resident and ~2 millicores idle on a real cluster), so the chart ships no
-resource requests by default — set `ingest.resources`/`web.resources` if your
-cluster policy requires them.
+The ingest is a single static Go binary (typically under 10 MiB resident),
+so the chart ships no resource requests by default — set
+`ingest.resources`/`web.resources` if your cluster policy requires them.
 
 ## After install
 
@@ -223,7 +222,7 @@ The rest of the checklist:
 | Symptom | Likely cause |
 |---|---|
 | `ImagePullBackOff` | Images not published yet, or GHCR package is private — check the package visibility or add `imagePullSecrets` |
-| Postgres pod `ImageInspectError` — *"short name mode is enforcing"* | The node runtime (CRI-O on Oracle Linux, seen on OKE) rejects unqualified image names. The chart default is already fully qualified; if you override `postgres.image`, include the registry (`docker.io/library/…`) |
+| Postgres pod `ImageInspectError` — *"short name mode is enforcing"* | CRI-O-based node runtimes (e.g. Oracle Linux on OKE) reject unqualified image names. The chart default is fully qualified; when overriding `postgres.image`, include the registry (`docker.io/library/…`) |
 | ingest pod crash-looping on first install | Postgres not ready yet; it settles once the DB accepts connections (migrations run on ingest boot) |
 | web pod not ready | Waits on the database — resolves seconds after ingest completes migrations |
 | Webhook deliveries fail with 401 | Webhook secret mismatch — re-read it from the k8s Secret and update the GitHub webhook config |

@@ -41,7 +41,7 @@ Pollers ─────────┘   (GitHub backfill scan · Anthropic Anal
 
 `installation` (github_install_id, org, admin_api_key_ref, ingest_token_hash) · `repo` (has_action, first_seen) · `workflow` (path, action_ref, action_version, triggers[], model_config — powers drift detection) · `run` (gh_run_id, trigger_event, actor, pr_number, status, conclusion, duration_s) · `agent_session` (run_id nullable, session_id, model, tok_in/out/cache_read/cache_create, cost_usd, source ∈ {otel, analytics_api}, confidence) · `pr_interaction` (pr_number, kind ∈ {review, comment, commit, pr_opened}, author, run_id) · `cost_daily` (api_key_name, model, tokens, est_cost_usd, billed_cost_usd) · `alert_rule` / `alert_event`
 
-## Stack (decided — don't reopen; backend rewritten TS→Go 2026-07-21 by owner decision)
+## Stack (decided — don't reopen)
 
 Backend: **Go** (net/http, pgx). Schema source of truth: **embedded SQL migrations** in `internal/db/migrations` — the ingest binary applies them on boot. Queue: **Postgres `FOR UPDATE SKIP LOCKED` job table** (`internal/queue`) — no Redis, no broker. Dashboard: **Next.js (App Router) + Tailwind**, reading Postgres via `packages/db` — a typed drizzle **mirror** of the schema (update `schema.ts` whenever a Go migration changes tables). Validation: tolerant Go JSON structs on every external payload — log schema drift, never crash. Deploy: **Docker Compose** (`docker compose up` must fully work) and **Helm** (`charts/scuttledeck`, one-command k8s). License: **Apache-2.0**.
 
@@ -76,7 +76,7 @@ Fleet (KPI strip: repos active, runs 7d, success rate, PRs reviewed, spend MTD v
 
 ## Roadmap — build in this order
 
-**P0 · Spike — ✅ DONE 2026-07-21.** Proven live: a real `claude-code-action` run (via a LiteLLM→Vertex gateway) landed with its session joined `exact` and true cost, matching the gateway's spend log to the cent. Full e2e suite in `internal/e2e` covers both arrival orders, idempotent re-delivery, and the heuristic fallback. One deviation: the GitHub App manifest flow (item 2) was deferred to P1 — live validation used a plain repo webhook. Original checklist:
+**P0 · Spike — done.** Exit criterion met: a live `claude-code-action` run correlated `exact` with true cost, through an LLM gateway. The e2e suite in `internal/e2e` covers both arrival orders, idempotent re-delivery, and the heuristic fallback. The GitHub App manifest flow moved to P1 (plain webhooks work today). Original checklist:
 1. Scaffold monorepo + docker-compose (Postgres + ingest).
 2. GitHub App manifest flow; webhook receiver with HMAC verification; persist `workflow_run` events for a test org.
 3. Discovery scanner: find workflows using the action in the test org via YAML parse.
@@ -85,9 +85,9 @@ Fleet (KPI strip: repos active, runs 7d, success rate, PRs reviewed, spend MTD v
 6. Run `claude-code-action` in a test repo with the setup step; verify the correlator lands one `run` row with its `agent_session` cost attached.
    **Exit: one run visible end-to-end with true token cost. Nothing else matters until this works.**
 
-**P1 · MVP — mostly landed 2026-07-22:** discovery poller ✅ (hourly + on workflow-file pushes, needs `GITHUB_TOKEN`), Analytics poller ✅ (fixture-tested, needs `ANTHROPIC_ADMIN_KEY`), Fleet/Runs views ✅, Helm ✅, docs ✅. **Outstanding: GitHub App manifest flow** (replaces per-repo webhooks + PAT; needs live GitHub interaction to build/test) and the org transfer + first release. Exit: a stranger self-hosts in <30 min.
-**P2 · Per-run economics + operability — landed 2026-07-22:** PR view ✅ (lifecycle table from `pull_request` webhooks — org webhook must subscribe to the Pull requests event; merge rate of reviewed PRs, cost/review, cost/merged-PR, spend-by-author as aggregated team insight — not individual surveillance), Cost view ✅ (by day/model/workflow, estimate-vs-invoice reconciliation from cost_report), Settings ✅ (ingest token rotation with show-once, session TTL via `SESSION_TTL_HOURS`). Dark mode (palettes CVD-validated per surface) + collapsible rail ✅.
-**P3 · Operate — partially landed 2026-07-22:** alert engine ✅ (budget, cost anomaly vs trailing median, failure-rate spike, action-stale; 15-min evaluation, per-rule cooldowns, Slack via `SLACK_WEBHOOK_URL` or per-rule override) with Alerts UI ✅; retention sweep ✅ (`RETENTION_DAYS`); multi-org: schema supports multiple installations and Settings lists them. **Outstanding: SSO/OIDC** (needs a provider decision; shared-password auth in place).
+**P1 · MVP — done except the GitHub App manifest flow** (org/repo webhooks + a `GITHUB_TOKEN` PAT serve until then). Shipped: discovery poller (hourly + on workflow-file pushes), Analytics poller, Fleet/Runs views, Helm chart, docs, v0.1.0 release. Exit: a stranger self-hosts in <30 min.
+**P2 · Per-run economics + operability — done.** PR view (lifecycle from `pull_request` webhooks — the org webhook must subscribe to the Pull requests event; merge rate of reviewed PRs, cost/review, cost/merged-PR, spend-by-author as aggregated team insight, never individual surveillance), Cost view (by day/model/workflow, estimate-vs-invoice reconciliation), Settings (token rotation with show-once, `SESSION_TTL_HOURS`), dark mode (palettes CVD-validated per surface), collapsible rail.
+**P3 · Operate — done except SSO/OIDC** (shared-password auth serves until a provider is chosen). Shipped: alert engine (budget, cost anomaly vs trailing median, failure-rate spike, action-stale; 15-min evaluation, per-rule cooldowns, Slack via `SLACK_WEBHOOK_URL` or per-rule override), Alerts UI, retention sweep (`RETENTION_DAYS`), multi-installation schema surfaced in Settings.
 
 ## Working conventions
 

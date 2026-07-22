@@ -52,7 +52,7 @@ type installationRef struct {
 	ID *int64 `json:"id"`
 }
 
-// WorkflowRunEvent is the subset of the workflow_run payload we consume.
+// WorkflowRunEvent is the consumed subset of the workflow_run payload.
 type WorkflowRunEvent struct {
 	Action       *string          `json:"action"`
 	WorkflowRun  *workflowRun     `json:"workflow_run"`

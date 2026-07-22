@@ -499,7 +499,7 @@ flowchart LR
 <section id="stack">
   <span class="eyebrow">10 · Stack</span>
   <h2>Boring on purpose</h2>
-  <p>Optimized for one-command self-hosting and a tiny operational footprint: a static Go binary for everything server-side, a single database. <em>(Revised 2026-07-21: the backend moved from TypeScript to Go after the P0 spike validated end-to-end — same schema, same routes, same correlator semantics.)</em></p>
+  <p>Optimized for one-command self-hosting and a tiny operational footprint: a static Go binary for everything server-side, a single database.</p>
   <div class="tablewrap">
     <table>
       <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
@@ -508,7 +508,7 @@ flowchart LR
         <tr><td>Queue/workers</td><td>Postgres <code>FOR UPDATE SKIP LOCKED</code> job table</td><td>Queue inside Postgres — no Redis or broker in any deploy; multi-replica safe by construction</td></tr>
         <tr><td>Database</td><td>Postgres 16, SQL migrations embedded in the binary</td><td>Entities and metrics in one store, migrations applied on boot; ClickHouse only if metric volume ever demands it</td></tr>
         <tr><td>Dashboard</td><td>Next.js + Tailwind</td><td>Familiar to the widest contributor pool; server components for data-heavy tables</td></tr>
-        <tr><td>Deploy</td><td>Docker Compose + Helm chart</td><td><code>docker compose up</code> or one <code>helm install</code> — the 30-minute-install promise, field-tested on OKE</td></tr>
+        <tr><td>Deploy</td><td>Docker Compose + Helm chart</td><td><code>docker compose up</code> or one <code>helm install</code> — the 30-minute-install promise</td></tr>
         <tr><td>License</td><td>Apache-2.0</td><td>Maximizes adoption in enterprises where the buyers sit; moat is execution, not license</td></tr>
       </tbody>
     </table>
