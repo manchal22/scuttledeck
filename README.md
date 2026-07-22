@@ -8,6 +8,8 @@
 
 ![Scuttledeck fleet dashboard](docs/screenshot-fleet.png)
 
+<sub>The Fleet view. Also included: Runs, Pull Requests (merge rate, cost per review), Cost, Alerts, Settings — and a dark "night watch" theme.</sub>
+
 > **Status: v0.1.0 (early).** The core pipeline — GitHub webhooks, OpenTelemetry ingest, and the run↔cost correlator — is verified end-to-end, including deployments behind LLM gateways (LiteLLM / Bedrock / Vertex). Expect rough edges; issues and feedback welcome.
 
 > Scuttledeck is an independent community project. It is **not affiliated with, endorsed by, or supported by Anthropic**.
