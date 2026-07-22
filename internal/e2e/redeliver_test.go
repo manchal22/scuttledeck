@@ -12,13 +12,13 @@ import (
 	"github.com/scuttledeck/scuttledeck/internal/poller"
 )
 
-// The sweeper must redeliver exactly the failed deliveries we never
+// The sweeper must redeliver exactly the failed deliveries that were never
 // received: not succeeded ones, not ones already in webhook_delivery, and
 // not stale ones outside the lookback.
 func TestRedeliverySweep(t *testing.T) {
 	ctx := context.Background()
 
-	// A delivery that DID reach us despite GitHub logging a failure (timeout
+	// A delivery that arrived despite GitHub logging a failure (timeout
 	// after processing): must not be redelivered.
 	if _, err := pool.Exec(ctx, `
 		insert into webhook_delivery (delivery_id, event, payload)

@@ -73,7 +73,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/otlp/metrics", s.handleOtlpMetrics)
 	mux.HandleFunc("POST /v1/metrics", s.handleOtlpMetrics) // standard OTLP path
 
-	// Never store telemetry we don't need: acknowledged and dropped.
+	// Logs and traces are acknowledged and dropped, never stored.
 	drop := func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"partialSuccess": map[string]any{}})
 	}

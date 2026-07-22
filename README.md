@@ -8,7 +8,7 @@
 
 ![Scuttledeck fleet dashboard](docs/screenshot-fleet.png)
 
-> ⚠️ **Status: pre-alpha.** The design is complete ([docs/design.html](docs/design.html)) and the Phase 0 spike is **proven on live infrastructure**: a real `claude-code-action` run — routed through a LiteLLM→Vertex gateway — landed in the dashboard with its exact token cost, matching the gateway's spend log to the cent. The backend is a single static Go binary; the Helm chart is field-tested on a real Kubernetes cluster. Star/watch the repo to follow along.
+> **Status: v0.1.0 (early).** The core pipeline — GitHub webhooks, OpenTelemetry ingest, and the run↔cost correlator — is verified end-to-end, including deployments behind LLM gateways (LiteLLM / Bedrock / Vertex). Expect rough edges; issues and feedback welcome.
 
 > Scuttledeck is an independent community project. It is **not affiliated with, endorsed by, or supported by Anthropic**.
 
@@ -114,12 +114,21 @@ DATABASE_URL=postgres://scuttledeck:scuttledeck@localhost:5432/scuttledeck \
 docker compose up -d                     # ingest on :8787
 ```
 
+## Documentation
+
+| Guide | Covers |
+|---|---|
+| [Deploy on Kubernetes](docs/deploy-kubernetes.md) | Install, credentials, wiring GitHub, values reference, production hardening, troubleshooting |
+| [LLM gateways](docs/gateways.md) | LiteLLM / Bedrock / Vertex configuration and which cost tiers apply |
+| [`scuttledeck/setup` action](https://github.com/scuttledeck/setup) | The one workflow step that enables telemetry |
+| [Design document](docs/design.html) | Architecture, data model, dashboard wireframes, risk analysis |
+
 ## Roadmap
 
-- [x] **P0 — Spike:** webhook ingest, workflow discovery, `scuttledeck/setup@v1`, OTLP endpoint, and the run↔cost correlator proven end-to-end *(done — validated on a live run through an LLM gateway, cost matched the gateway spend log to the cent)*
-- [ ] **P1 — MVP:** discovery poller, GitHub App install flow, Anthropic Analytics poller, first release *(Fleet + Runs views, Helm deploy, and docs already landed)*
-- [ ] **P2 — Per-run economics:** PR view, cost-per-review, billing reconciliation
-- [ ] **P3 — Operate:** alerting, Slack, SSO/OIDC, multi-org, retention policies
+- [x] **P0 — Spike:** webhook ingest, workflow discovery, `scuttledeck/setup@v1`, OTLP endpoint, run↔cost correlator
+- [x] **P1 — MVP:** Fleet + Runs views, discovery poller, Anthropic Analytics poller, Helm deploy, v0.1.0 release *(GitHub App install flow pending — org/repo webhooks today)*
+- [x] **P2 — Per-run economics:** PR outcomes view, cost-per-review, billing reconciliation, settings
+- [x] **P3 — Operate:** alert engine → Slack, retention *(SSO/OIDC pending — password auth today)*
 
 The full architecture — data sources (verified against platform docs), data model, dashboard wireframes, and risk analysis — lives in [docs/design.html](docs/design.html).
 

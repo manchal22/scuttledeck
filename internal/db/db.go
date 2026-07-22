@@ -24,8 +24,9 @@ func Connect(ctx context.Context, url string) (*pgxpool.Pool, error) {
 }
 
 // Migrate applies embedded migrations in lexical order, tracked in
-// schema_migrations. Databases created by the pre-Go (drizzle) deploys are
-// baselined: if core tables already exist, 0000 is recorded, not re-run.
+// schema_migrations. Databases whose schema predates the tracking table are
+// baselined: when core tables already exist, the initial migration is
+// recorded as applied instead of re-run.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	if _, err := pool.Exec(ctx, `create table if not exists schema_migrations (
 		name text primary key, applied_at timestamptz not null default now())`); err != nil {

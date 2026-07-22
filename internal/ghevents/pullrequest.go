@@ -27,7 +27,7 @@ type prPayload struct {
 	} `json:"head"`
 }
 
-// PullRequestEvent is the subset of the pull_request webhook we consume.
+// PullRequestEvent is the consumed subset of the pull_request payload.
 type PullRequestEvent struct {
 	Action      *string     `json:"action"`
 	PullRequest *prPayload  `json:"pull_request"`
