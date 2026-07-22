@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/scuttledeck/scuttledeck/internal/githubapp"
 	"github.com/scuttledeck/scuttledeck/internal/otlp"
 	"github.com/scuttledeck/scuttledeck/internal/queue"
 )
@@ -47,6 +48,10 @@ func VerifyGithubSignature(secret string, body []byte, header string) bool {
 type Server struct {
 	Pool          *pgxpool.Pool
 	WebhookSecret string
+	// ExternalURL overrides Host-header derivation for the setup flow.
+	ExternalURL string
+	// GithubAPIBaseURL overrides api.github.com (tests use a local server).
+	GithubAPIBaseURL string
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -70,6 +75,9 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("POST /webhooks/github", s.handleGithubWebhook)
 
+	mux.HandleFunc("GET /setup/github", s.handleSetupPage)
+	mux.HandleFunc("GET /setup/github/callback", s.handleSetupCallback)
+
 	mux.HandleFunc("POST /v1/otlp/metrics", s.handleOtlpMetrics)
 	mux.HandleFunc("POST /v1/metrics", s.handleOtlpMetrics) // standard OTLP path
 
@@ -89,7 +97,7 @@ func (s *Server) handleGithubWebhook(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unreadable body"})
 		return
 	}
-	if !VerifyGithubSignature(s.WebhookSecret, body, r.Header.Get("X-Hub-Signature-256")) {
+	if !s.signatureValid(r.Context(), body, r.Header.Get("X-Hub-Signature-256")) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid signature"})
 		return
 	}
@@ -192,6 +200,25 @@ func (s *Server) handleOtlpMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"partialSuccess": map[string]any{}})
+}
+
+// signatureValid accepts the env-configured webhook secret or any GitHub
+// App secret registered via the setup flow.
+func (s *Server) signatureValid(ctx context.Context, body []byte, header string) bool {
+	if VerifyGithubSignature(s.WebhookSecret, body, header) {
+		return true
+	}
+	secrets, err := githubapp.WebhookSecrets(ctx, s.Pool)
+	if err != nil {
+		log.Printf("[webhook] app secret lookup failed: %v", err)
+		return false
+	}
+	for _, secret := range secrets {
+		if VerifyGithubSignature(secret, body, header) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Server) installationForToken(ctx context.Context, token string) (int64, error) {

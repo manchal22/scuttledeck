@@ -60,7 +60,7 @@ func TestRedeliverySweep(t *testing.T) {
 	}))
 	defer mock.Close()
 
-	if err := poller.RunRedelivery(ctx, pool, mock.URL, "test-token"); err != nil {
+	if err := poller.RunRedelivery(ctx, pool, poller.Config{GithubToken: "test-token", GithubAPIBaseURL: mock.URL}); err != nil {
 		t.Fatal(err)
 	}
 	if got := redelivered.Load(); got != 1 {

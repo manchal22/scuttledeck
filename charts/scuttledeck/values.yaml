@@ -20,6 +20,10 @@ litellm:
   baseUrl: ""
   adminKey: ""
 
+# -- Public base URL of the ingest (e.g. https://scuttledeck.example.com).
+# Used by the GitHub App setup flow; defaults to the request's Host header.
+externalUrl: ""
+
 # -- Days of raw webhook deliveries to keep (0 disables the sweep).
 retentionDays: 30
 

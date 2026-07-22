@@ -81,7 +81,19 @@ kubectl get secret scuttledeck-secrets -n scuttledeck \
   -o jsonpath='{.data.INGEST_TOKEN}' | base64 -d; echo
 ```
 
-**3. Wire GitHub** (per repo for now; the GitHub App flow is on the roadmap):
+**3. Wire GitHub — recommended: the GitHub App (two clicks).** Open
+
+```
+http://<ingest-address>/setup/github?token=<ingest token>
+```
+
+and click **Create app**: a read-only GitHub App is created from a pre-filled
+manifest (permissions and webhook URL included — GitHub shows everything
+before creating). Then click **Install** and pick the repos. Webhooks,
+short-lived API tokens for discovery/redelivery, and repo-selection changes
+are all handled automatically from then on — no PAT, no manual webhook.
+
+**Manual alternative** (plain webhooks + a PAT):
 
 - Repo → Settings → Webhooks → Add: payload URL
   `https://scuttledeck.your.domain/webhooks/github`, content type

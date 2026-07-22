@@ -8,12 +8,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/scuttledeck/scuttledeck/internal/alerts"
 	"github.com/scuttledeck/scuttledeck/internal/discovery"
+	"github.com/scuttledeck/scuttledeck/internal/githubapp"
 )
 
 type Config struct {
@@ -65,19 +67,17 @@ func (c *Config) defaults() {
 func Start(ctx context.Context, pool *pgxpool.Pool, cfg Config) {
 	cfg.defaults()
 
-	if cfg.GithubToken != "" {
-		go every(ctx, cfg.DiscoveryInterval, "discovery", func() error {
-			return RunDiscovery(ctx, pool, cfg.GithubToken, cfg.GithubOrg)
-		})
-		// Sweep failed webhook deliveries: turns "ingest was down" from data
-		// loss into a delayed arrival. Runs immediately on boot — exactly when
-		// an outage just ended.
-		go every(ctx, 30*time.Minute, "redelivery", func() error {
-			return RunRedelivery(ctx, pool, cfg.GithubAPIBaseURL, cfg.GithubToken)
-		})
-	} else {
-		log.Println("[poller] discovery + redelivery disabled (no GITHUB_TOKEN)")
-	}
+	// Discovery + redelivery authenticate with a PAT when configured, else
+	// with GitHub App installation tokens once the setup flow has run.
+	go every(ctx, cfg.DiscoveryInterval, "discovery", func() error {
+		return RunDiscovery(ctx, pool, cfg)
+	})
+	// Sweep failed webhook deliveries: turns "ingest was down" from data
+	// loss into a delayed arrival. Runs immediately on boot — exactly when
+	// an outage just ended.
+	go every(ctx, 30*time.Minute, "redelivery", func() error {
+		return RunRedelivery(ctx, pool, cfg)
+	})
 
 	if cfg.AnthropicAdminKey != "" {
 		go every(ctx, cfg.AnalyticsInterval, "analytics", func() error {
@@ -132,48 +132,95 @@ func every(ctx context.Context, interval time.Duration, name string, fn func() e
 	}
 }
 
-// RunDiscovery scans each installation's org and persists the inventory.
-func RunDiscovery(ctx context.Context, pool *pgxpool.Pool, token, orgOverride string) error {
-	rows, err := pool.Query(ctx, `select id, org from installation`)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	type inst struct {
-		id  int64
-		org string
-	}
-	var insts []inst
-	for rows.Next() {
-		var i inst
-		if err := rows.Scan(&i.id, &i.org); err != nil {
-			return err
+// githubAuth is a token bound to one org scope.
+type githubAuth struct {
+	Org   string
+	Token string
+}
+
+var authUnavailableOnce sync.Once
+
+// resolveGithubAuths returns per-org tokens: the configured PAT applied to
+// every known installation org, or App installation tokens when the GitHub
+// App setup flow has run. Empty (no error) when neither is configured.
+func resolveGithubAuths(ctx context.Context, pool *pgxpool.Pool, cfg Config) ([]githubAuth, error) {
+	if cfg.GithubToken != "" {
+		rows, err := pool.Query(ctx, `select org from installation`)
+		if err != nil {
+			return nil, err
 		}
-		insts = append(insts, i)
-	}
-	if err := rows.Err(); err != nil {
-		return err
+		defer rows.Close()
+		var out []githubAuth
+		for rows.Next() {
+			var org string
+			if err := rows.Scan(&org); err != nil {
+				return nil, err
+			}
+			if cfg.GithubOrg != "" {
+				org = cfg.GithubOrg
+			}
+			out = append(out, githubAuth{Org: org, Token: cfg.GithubToken})
+		}
+		return out, rows.Err()
 	}
 
-	client := discovery.NewRESTClient(token)
-	for _, i := range insts {
-		org := i.org
-		if orgOverride != "" {
-			org = orgOverride
+	app, err := githubapp.Load(ctx, pool)
+	if err != nil || app == nil {
+		if err == nil {
+			authUnavailableOnce.Do(func() {
+				log.Println("[poller] discovery + redelivery idle: no GITHUB_TOKEN and no GitHub App (run /setup/github)")
+			})
 		}
-		results, err := discovery.ScanOrg(ctx, client, org)
-		if err != nil {
-			log.Printf("[discovery] scan %s: %v", org, err)
+		return nil, err
+	}
+	apiBase := cfg.GithubAPIBaseURL
+	if apiBase == "" {
+		apiBase = "https://api.github.com"
+	}
+	auths, err := app.InstallationTokens(ctx, apiBase)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]githubAuth, 0, len(auths))
+	for _, a := range auths {
+		// installations discovered via the App become installation rows
+		if _, err := pool.Exec(ctx, `
+			insert into installation (org, github_install_id) values ($1, $2)
+			on conflict (org) do update set github_install_id = excluded.github_install_id`,
+			a.Org, a.InstallID); err != nil {
+			return nil, err
+		}
+		out = append(out, githubAuth{Org: a.Org, Token: a.Token})
+	}
+	return out, nil
+}
+
+// RunDiscovery scans each authenticated org and persists the inventory.
+func RunDiscovery(ctx context.Context, pool *pgxpool.Pool, cfg Config) error {
+	auths, err := resolveGithubAuths(ctx, pool, cfg)
+	if err != nil || len(auths) == 0 {
+		return err
+	}
+	for _, auth := range auths {
+		var instID int64
+		if err := pool.QueryRow(ctx,
+			`select id from installation where org = $1`, auth.Org).Scan(&instID); err != nil {
 			continue
 		}
-		if err := discovery.PersistScan(ctx, pool, i.id, results); err != nil {
+		client := discovery.NewRESTClient(auth.Token)
+		results, err := discovery.ScanOrg(ctx, client, auth.Org)
+		if err != nil {
+			log.Printf("[discovery] scan %s: %v", auth.Org, err)
+			continue
+		}
+		if err := discovery.PersistScan(ctx, pool, instID, results); err != nil {
 			return err
 		}
 		hits := 0
 		for _, r := range results {
 			hits += len(r.Hits)
 		}
-		log.Printf("[discovery] %s: %d repos scanned, %d claude workflows", org, len(results), hits)
+		log.Printf("[discovery] %s: %d repos scanned, %d claude workflows", auth.Org, len(results), hits)
 	}
 	return nil
 }

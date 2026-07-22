@@ -53,17 +53,28 @@ func main() {
 		log.Printf("[boot] installation %q ready (ingest token hash registered)", org)
 	}
 
-	githubToken := os.Getenv("GITHUB_TOKEN")
+	retentionDays := 30
+	if v := os.Getenv("RETENTION_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			retentionDays = n
+		}
+	}
+	pollerCfg := poller.Config{
+		GithubToken:       os.Getenv("GITHUB_TOKEN"),
+		GithubOrg:         "",
+		AnthropicAdminKey: os.Getenv("ANTHROPIC_ADMIN_KEY"),
+		LiteLLMBaseURL:    os.Getenv("LITELLM_BASE_URL"),
+		LiteLLMAdminKey:   os.Getenv("LITELLM_ADMIN_KEY"),
+		SlackWebhookURL:   os.Getenv("SLACK_WEBHOOK_URL"),
+		RetentionDays:     retentionDays,
+	}
 
 	worker := queue.NewWorker(pool, time.Second)
 	queue.RegisterDefaultHandlers(worker, pool, queue.HandlerOptions{
 		OnWorkflowFilesChanged: func(repoFullName string) {
-			if githubToken == "" {
-				return
-			}
-			log.Printf("[discovery] workflow files changed in %s — rescanning", repoFullName)
+			log.Printf("[discovery] change in %s — rescanning", repoFullName)
 			go func() {
-				if err := poller.RunDiscovery(context.Background(), pool, githubToken, ""); err != nil {
+				if err := poller.RunDiscovery(context.Background(), pool, pollerCfg); err != nil {
 					log.Printf("[discovery] rescan: %v", err)
 				}
 			}()
@@ -71,23 +82,13 @@ func main() {
 	})
 	worker.Start(ctx)
 
-	retentionDays := 30
-	if v := os.Getenv("RETENTION_DAYS"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			retentionDays = n
-		}
-	}
-	poller.Start(ctx, pool, poller.Config{
-		GithubToken:       githubToken,
-		GithubOrg:         "",
-		AnthropicAdminKey: os.Getenv("ANTHROPIC_ADMIN_KEY"),
-		LiteLLMBaseURL:    os.Getenv("LITELLM_BASE_URL"),
-		LiteLLMAdminKey:   os.Getenv("LITELLM_ADMIN_KEY"),
-		SlackWebhookURL:   os.Getenv("SLACK_WEBHOOK_URL"),
-		RetentionDays:     retentionDays,
-	})
+	poller.Start(ctx, pool, pollerCfg)
 
-	server := &httpapi.Server{Pool: pool, WebhookSecret: webhookSecret}
+	server := &httpapi.Server{
+		Pool:          pool,
+		WebhookSecret: webhookSecret,
+		ExternalURL:   os.Getenv("EXTERNAL_URL"),
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8787"

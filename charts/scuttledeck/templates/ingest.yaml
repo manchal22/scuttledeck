@@ -69,6 +69,10 @@ spec:
                   key: INGEST_TOKEN
             - name: RETENTION_DAYS
               value: {{ .Values.retentionDays | quote }}
+            {{- with .Values.externalUrl }}
+            - name: EXTERNAL_URL
+              value: {{ . | quote }}
+            {{- end }}
             {{- if .Values.github.token }}
             - name: GITHUB_TOKEN
               valueFrom:

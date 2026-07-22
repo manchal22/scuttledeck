@@ -173,6 +173,29 @@ func RegisterDefaultHandlers(w *Worker, pool *pgxpool.Pool, opts ...HandlerOptio
 			if err := ghevents.ProcessPullRequest(ctx, pool, evt); err != nil {
 				return err
 			}
+		case "installation", "installation_repositories":
+			var evt struct {
+				Installation *struct {
+					ID      *int64 `json:"id"`
+					Account *struct {
+						Login *string `json:"login"`
+					} `json:"account"`
+				} `json:"installation"`
+			}
+			if err := json.Unmarshal(job.Payload, &evt); err == nil &&
+				evt.Installation != nil && evt.Installation.ID != nil &&
+				evt.Installation.Account != nil && evt.Installation.Account.Login != nil {
+				if _, err := pool.Exec(ctx, `
+					insert into installation (org, github_install_id) values ($1, $2)
+					on conflict (org) do update set github_install_id = excluded.github_install_id`,
+					*evt.Installation.Account.Login, *evt.Installation.ID); err != nil {
+					return err
+				}
+				// repo selection changed — rescan promptly rather than waiting an hour
+				if opt.OnWorkflowFilesChanged != nil {
+					opt.OnWorkflowFilesChanged(*evt.Installation.Account.Login)
+				}
+			}
 		case "push":
 			var evt ghevents.PushEvent
 			if err := json.Unmarshal(job.Payload, &evt); err == nil &&

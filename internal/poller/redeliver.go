@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/scuttledeck/scuttledeck/internal/githubapp"
 )
 
 // GitHub never retries failed webhook deliveries on its own — an ingest
@@ -64,13 +66,35 @@ func (g *ghAPI) do(ctx context.Context, method, path string, out any) (int, erro
 	return res.StatusCode, nil
 }
 
-// RunRedelivery sweeps org- and repo-level hooks that point at this
-// Scuttledeck instance and redelivers failed deliveries that were never received.
-func RunRedelivery(ctx context.Context, pool *pgxpool.Pool, baseURL, token string) error {
+// RunRedelivery sweeps hooks that point at this Scuttledeck instance and
+// redelivers failed deliveries that were never received. With a PAT it
+// walks org/repo hooks; with a GitHub App it sweeps the app's own webhook
+// via /app/hook/deliveries (JWT auth).
+func RunRedelivery(ctx context.Context, pool *pgxpool.Pool, cfg Config) error {
+	baseURL := cfg.GithubAPIBaseURL
 	if baseURL == "" {
 		baseURL = "https://api.github.com"
 	}
-	gh := &ghAPI{baseURL: baseURL, token: token, http: &http.Client{Timeout: 30 * time.Second}}
+	if cfg.GithubToken == "" {
+		app, err := githubapp.Load(ctx, pool)
+		if err != nil || app == nil {
+			return err
+		}
+		jwt, err := app.JWT()
+		if err != nil {
+			return err
+		}
+		gh := &ghAPI{baseURL: baseURL, token: jwt, http: &http.Client{Timeout: 30 * time.Second}}
+		n, err := sweepDeliveries(ctx, pool, gh, "/app/hook/deliveries?per_page=100", "/app/hook/deliveries/%d/attempts")
+		if err != nil {
+			return err
+		}
+		if n > 0 {
+			log.Printf("[redeliver] requested %d app-webhook redeliveries", n)
+		}
+		return nil
+	}
+	gh := &ghAPI{baseURL: baseURL, token: cfg.GithubToken, http: &http.Client{Timeout: 30 * time.Second}}
 
 	// hook scopes: each installation's org hooks plus hooks on tracked repos
 	scopes := map[string]bool{} // API path prefix, e.g. "orgs/acme" or "repos/acme/api"
@@ -133,9 +157,16 @@ func RunRedelivery(ctx context.Context, pool *pgxpool.Pool, baseURL, token strin
 }
 
 func sweepHook(ctx context.Context, pool *pgxpool.Pool, gh *ghAPI, scope string, hookID int64) (int, error) {
+	return sweepDeliveries(ctx, pool, gh,
+		fmt.Sprintf("/%s/hooks/%d/deliveries?per_page=100", scope, hookID),
+		"/"+scope+fmt.Sprintf("/hooks/%d", hookID)+"/deliveries/%d/attempts")
+}
+
+// sweepDeliveries lists deliveries at listPath and redelivers lost ones via
+// the printf-style attemptPathFmt (one %d: the delivery id).
+func sweepDeliveries(ctx context.Context, pool *pgxpool.Pool, gh *ghAPI, listPath, attemptPathFmt string) (int, error) {
 	var deliveries []ghDelivery
-	status, err := gh.do(ctx, http.MethodGet,
-		fmt.Sprintf("/%s/hooks/%d/deliveries?per_page=100", scope, hookID), &deliveries)
+	status, err := gh.do(ctx, http.MethodGet, listPath, &deliveries)
 	if err != nil || status >= 300 {
 		return 0, fmt.Errorf("list deliveries: HTTP %d %v", status, err)
 	}
@@ -172,10 +203,9 @@ func sweepHook(ctx context.Context, pool *pgxpool.Pool, gh *ghAPI, scope string,
 		if seen {
 			continue
 		}
-		status, err := gh.do(ctx, http.MethodPost,
-			fmt.Sprintf("/%s/hooks/%d/deliveries/%d/attempts", scope, hookID, d.ID), nil)
+		status, err := gh.do(ctx, http.MethodPost, fmt.Sprintf(attemptPathFmt, d.ID), nil)
 		if err != nil || status >= 300 {
-			log.Printf("[redeliver] %s delivery %s (%s): HTTP %d %v", scope, guid, d.Event, status, err)
+			log.Printf("[redeliver] delivery %s (%s): HTTP %d %v", guid, d.Event, status, err)
 			continue
 		}
 		count++
