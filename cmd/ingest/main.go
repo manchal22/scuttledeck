@@ -81,6 +81,8 @@ func main() {
 		GithubToken:       githubToken,
 		GithubOrg:         "",
 		AnthropicAdminKey: os.Getenv("ANTHROPIC_ADMIN_KEY"),
+		LiteLLMBaseURL:    os.Getenv("LITELLM_BASE_URL"),
+		LiteLLMAdminKey:   os.Getenv("LITELLM_ADMIN_KEY"),
 		SlackWebhookURL:   os.Getenv("SLACK_WEBHOOK_URL"),
 		RetentionDays:     retentionDays,
 	})

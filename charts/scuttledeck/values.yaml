@@ -14,6 +14,12 @@ slack:
   # -- Incoming-webhook URL for alert notifications.
   webhookUrl: ""
 
+litellm:
+  # -- LiteLLM gateway base URL + admin key: enables the gateway spend
+  # poller (daily billed totals for deployments with no Anthropic invoice).
+  baseUrl: ""
+  adminKey: ""
+
 # -- Days of raw webhook deliveries to keep (0 disables the sweep).
 retentionDays: 30
 

@@ -125,6 +125,7 @@ for testing, see the README's local quick start.)
 | `github.token` | — | Read-only GitHub token: enables the discovery scanner (hourly + on workflow-file pushes) **and the failed-webhook redelivery sweeper** (on boot + every 30 min — turns ingest downtime into delayed arrival instead of data loss) |
 | `anthropic.adminKey` | — | Admin API key: enables the Analytics + cost-report pollers |
 | `slack.webhookUrl` | — | Incoming webhook for alert notifications |
+| `litellm.baseUrl` + `litellm.adminKey` | — | LiteLLM gateway spend poller: daily billed totals for the reconciliation view |
 | `retentionDays` | `30` | Raw webhook delivery retention |
 | `ingest.service.type` / `web.service.type` | `ClusterIP` | `LoadBalancer` for a direct address without an ingress controller |
 | `ingest.image.repository` | `ghcr.io/scuttledeck/scuttledeck-ingest` | |

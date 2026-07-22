@@ -166,7 +166,7 @@ export async function reconciliation(days = 14): Promise<ReconciliationRow[]> {
     ),
     billed as (
       select date_trunc('day', day) d, sum(billed_cost_usd) v
-      from cost_daily where api_key_name = '__org_total' group by 1
+      from cost_daily where api_key_name in ('__org_total','__litellm_total') group by 1
     )
     select to_char(coalesce(est.d, billed.d), 'YYYY-MM-DD') as "day",
       coalesce(est.v, 0)::float as "estUsd",

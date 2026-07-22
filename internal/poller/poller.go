@@ -27,6 +27,10 @@ type Config struct {
 	AnthropicBaseURL string
 	// Optional override for the GitHub API base (tests use a local server).
 	GithubAPIBaseURL string
+	// LiteLLM gateway base URL + admin key enable the gateway spend poller
+	// (billing truth for deployments with no Anthropic invoice).
+	LiteLLMBaseURL  string
+	LiteLLMAdminKey string
 	// Slack incoming-webhook URL for alert notifications.
 	SlackWebhookURL string
 	// Days of raw webhook deliveries to keep. <=0 disables the sweep.
@@ -84,6 +88,12 @@ func Start(ctx context.Context, pool *pgxpool.Pool, cfg Config) {
 		})
 	} else {
 		log.Println("[poller] anthropic pollers disabled (no ANTHROPIC_ADMIN_KEY)")
+	}
+
+	if cfg.LiteLLMBaseURL != "" && cfg.LiteLLMAdminKey != "" {
+		go every(ctx, cfg.CostInterval, "litellm_spend", func() error {
+			return RunLiteLLMSpend(ctx, pool, cfg.LiteLLMBaseURL, cfg.LiteLLMAdminKey)
+		})
 	}
 
 	go every(ctx, cfg.AlertInterval, "alerts", func() error {
