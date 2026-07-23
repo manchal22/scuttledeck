@@ -120,6 +120,7 @@ docker compose up -d                     # ingest on :8787
 
 | Guide | Covers |
 |---|---|
+| [Architecture](docs/architecture.md) | The three ingestion planes, the correlator, queue, pollers, resilience model, security posture |
 | [Deploy on Kubernetes](docs/deploy-kubernetes.md) | Install, credentials, wiring GitHub, values reference, production hardening, troubleshooting |
 | [LLM gateways](docs/gateways.md) | LiteLLM / Bedrock / Vertex configuration and which cost tiers apply |
 | [`scuttledeck/setup` action](https://github.com/scuttledeck/setup) | The one workflow step that enables telemetry |
