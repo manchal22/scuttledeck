@@ -4,7 +4,7 @@
 
 # Scuttledeck
 
-**Fleet monitoring for the Claude Code GitHub Action.** One self-hosted dashboard for your whole GitHub org: which repos run the agent, live run status, the PRs it reviewed or authored, and what every run actually cost.
+**The self-hosted dashboard for the Claude Code GitHub Action.** One place for your whole GitHub org: which repos run the agent, live run status, the PRs it reviewed or authored, and what every run actually cost.
 
 ![Scuttledeck fleet dashboard](docs/screenshot-fleet.png)
 
