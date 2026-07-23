@@ -58,11 +58,12 @@ func BuildManifest(externalURL, org string) map[string]any {
 			"pull_requests": "read",
 			"metadata":      "read",
 		},
+		// installation / installation_repositories arrive automatically for
+		// every app — they are not subscribable manifest events.
 		"default_events": []string{
 			"workflow_run",
 			"pull_request",
 			"push",
-			"installation_repositories",
 		},
 	}
 }
